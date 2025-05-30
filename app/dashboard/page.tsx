@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useProtectedRoute } from '@/hooks/useAuth';
 import { 
   FileText, 
   Brain, 
@@ -13,10 +16,29 @@ import {
   Plus,
   ArrowRight,
   Clock,
-  TrendingUp
+  TrendingUp,
+  User,
+  Loader2
 } from 'lucide-react';
 
 export default function DashboardPage() {
+  const { user, logout, isLoading } = useProtectedRoute();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // useProtectedRoute will handle redirect
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -39,9 +61,17 @@ export default function DashboardPage() {
               <Button variant="ghost" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" asChild size="sm">
-                <Link href="/demo">View Demo</Link>
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" asChild size="sm">
+                  <Link href="/profile" className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:inline">{user.first_name}</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" onClick={logout} size="sm">
+                  Sign Out
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -51,16 +81,16 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
-            <h2 className="text-2xl font-bold mb-2">Welcome to Your Learning Hub!</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              Welcome back, {user.first_name}! 👋
+            </h2>
             <p className="text-blue-100 mb-4">
               Your personalized dashboard for AI-powered learning and collaboration.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" size="sm" asChild>
-                <Link href="/demo">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Explore Features
-                </Link>
+              <Button variant="secondary" size="sm" disabled>
+                <Plus className="w-4 h-4 mr-2" />
+                Upload Files (Coming Soon)
               </Button>
               <Button variant="outline" size="sm" className="text-white border-white hover:bg-white hover:text-blue-600">
                 <TrendingUp className="w-4 h-4 mr-2" />
@@ -252,17 +282,19 @@ export default function DashboardPage() {
             {/* Settings */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Preferences</h3>
-                <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-full">
-                  Phase 7
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h3>
+                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-full">
+                  Available
                 </span>
               </div>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Customize your learning experience.
+                Manage your account and preferences.
               </p>
-              <Button disabled variant="outline" className="w-full">
-                <Settings className="w-4 h-4 mr-2" />
-                Manage Settings
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/profile">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage Profile
+                </Link>
               </Button>
             </div>
 
@@ -270,12 +302,6 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <Button asChild variant="ghost" className="w-full justify-start">
-                  <Link href="/demo">
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    View Development Demo
-                  </Link>
-                </Button>
                 <Button asChild variant="ghost" className="w-full justify-start">
                   <Link href="/">
                     <ArrowRight className="w-4 h-4 mr-2" />

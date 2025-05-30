@@ -1,8 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Brain, Users, Zap, FileText, Award } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { BookOpen, Brain, Users, Zap, FileText, Award, User } from 'lucide-react';
 
 export default function HomePage() {
+  const { user, logout, isLoading } = useAuth();
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -13,12 +18,36 @@ export default function HomePage() {
               Study Helper
             </Link>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" asChild>
-                <Link href="/auth/login">Sign In</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/auth/register">Get Started</Link>
-              </Button>
+              {isLoading ? (
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-20 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                </div>
+              ) : user ? (
+                <div className="flex items-center space-x-4">
+                  <Button variant="ghost" asChild>
+                    <Link href="/dashboard">Dashboard</Link>
+                  </Button>
+                  <Button variant="ghost" asChild>
+                    <Link href="/profile" className="flex items-center space-x-2">
+                      <User className="w-4 h-4" />
+                      <span className="hidden sm:inline">{user.first_name}</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" onClick={logout}>
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <Button variant="ghost" asChild>
+                    <Link href="/auth/login">Sign In</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link href="/auth/register">Get Started</Link>
+                  </Button>
+                </div>
+              )}
             </div>
           </nav>
         </div>
@@ -29,24 +58,53 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
-              Transform Your
-              <span className="text-primary"> Learning Journey</span>
+              {user ? (
+                <>
+                  Welcome back,
+                  <span className="text-primary"> {user.first_name}!</span>
+                </>
+              ) : (
+                <>
+                  Transform Your
+                  <span className="text-primary"> Learning Journey</span>
+                </>
+              )}
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Harness the power of AI to organize your study materials, generate intelligent summaries, 
-              create custom quizzes, and collaborate with your study community.
+              {user ? (
+                "Continue your AI-powered learning experience. Access your personalized dashboard, track your progress, and collaborate with your study community."
+              ) : (
+                "Harness the power of AI to organize your study materials, generate intelligent summaries, create custom quizzes, and collaborate with your study community."
+              )}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild className="text-lg px-8 py-4">
-                <Link href="/auth/register">
-                  Start Learning Today
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild className="text-lg px-8 py-4">
-                <Link href="/demo">
-                  View Demo
-                </Link>
-              </Button>
+              {user ? (
+                <>
+                  <Button size="lg" asChild className="text-lg px-8 py-4">
+                    <Link href="/dashboard">
+                      Go to Dashboard
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="lg" asChild className="text-lg px-8 py-4">
+                    <Link href="/demo">
+                      View Development Demo
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button size="lg" asChild className="text-lg px-8 py-4">
+                    <Link href="/auth/register">
+                      Start Learning Today
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="lg" asChild className="text-lg px-8 py-4">
+                    <Link href="/demo">
+                      View Demo
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -149,18 +207,37 @@ export default function HomePage() {
       {/* Call to Action */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Revolutionize Your Study Experience?
-          </h2>
-          <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-            Join thousands of students who are already using Study Helper to achieve better results 
-            and make learning more engaging and effective.
-          </p>
-          <Button size="lg" variant="secondary" asChild className="text-lg px-8 py-4">
-            <Link href="/auth/register">
-              Get Started for Free
-            </Link>
-          </Button>
+          {user ? (
+            <>
+              <h2 className="text-3xl font-bold mb-4">
+                Ready to Continue Your Learning Journey?
+              </h2>
+              <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
+                Access your personalized dashboard and continue making progress with Study Helper's 
+                AI-powered learning tools and collaborative features.
+              </p>
+              <Button size="lg" variant="secondary" asChild className="text-lg px-8 py-4">
+                <Link href="/dashboard">
+                  Go to Dashboard
+                </Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-bold mb-4">
+                Ready to Revolutionize Your Study Experience?
+              </h2>
+              <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
+                Join thousands of students who are already using Study Helper to achieve better results 
+                and make learning more engaging and effective.
+              </p>
+              <Button size="lg" variant="secondary" asChild className="text-lg px-8 py-4">
+                <Link href="/auth/register">
+                  Get Started for Free
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </section>
 
@@ -171,8 +248,17 @@ export default function HomePage() {
             <p>© 2025 Study Helper. Empowering learners with AI-driven education tools.</p>
             <div className="mt-2 flex justify-center space-x-4">
               <Link href="/demo" className="hover:text-primary">Demo</Link>
-              <Link href="/auth/login" className="hover:text-primary">Sign In</Link>
-              <Link href="/auth/register" className="hover:text-primary">Register</Link>
+              {user ? (
+                <>
+                  <Link href="/dashboard" className="hover:text-primary">Dashboard</Link>
+                  <Link href="/profile" className="hover:text-primary">Profile</Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/login" className="hover:text-primary">Sign In</Link>
+                  <Link href="/auth/register" className="hover:text-primary">Register</Link>
+                </>
+              )}
             </div>
           </div>
         </div>

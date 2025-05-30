@@ -12,36 +12,42 @@ A modern Next.js frontend for the Study Helper AI-powered learning platform.
 ### Installation
 
 1. Clone the repository and navigate to the frontend directory:
-```bash
-cd frontend
-```
+
+    ```bash
+    cd frontend
+    ```
 
 2. Install dependencies:
-```bash
-npm install
-```
+
+    ```bash
+    npm install
+    ```
 
 3. Set up environment variables:
-```bash
-cp .env.local.example .env.local
-```
-Edit `.env.local` with your configuration:
-```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-NEXT_PUBLIC_APP_NAME="Study Helper"
-NEXT_PUBLIC_APP_VERSION="1.0.0"
-```
+
+    ```bash
+    cp .env.local.example .env.local
+    ```
+
+    Edit `.env.local` with your configuration:
+
+    ```env
+    NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+    NEXT_PUBLIC_APP_NAME="Study Helper"
+    NEXT_PUBLIC_APP_VERSION="1.0.0"
+    ```
 
 4. Run the development server:
-```bash
-npm run dev
-```
+
+    ```bash
+    npm run dev
+    ```
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📁 Project Structure
 
-```
+```plaintext
 frontend/
 ├── app/                 # Next.js App Router pages
 │   ├── auth/           # Authentication pages (login, register)
@@ -77,6 +83,7 @@ frontend/
 ## 🎨 UI Design Features
 
 ### Landing Page
+
 - **Modern Hero Section**: Gradient background with compelling messaging
 - **Feature Showcase**: Six feature cards with gradient backgrounds and icons
 - **Professional Layout**: Clean typography, proper spacing, and visual hierarchy
@@ -84,6 +91,7 @@ frontend/
 - **Call-to-Action**: Clear navigation to registration and demo pages
 
 ### Authentication Pages
+
 - **Split Layout**: Side-by-side branding and form sections
 - **Visual Branding**: Gradient backgrounds with feature highlights
 - **Phase Indicators**: Clear communication about upcoming functionality
@@ -91,6 +99,7 @@ frontend/
 - **Smooth Navigation**: Easy movement between login, register, and main pages
 
 ### Dashboard
+
 - **Professional Header**: Clean navigation with action buttons
 - **Welcome Section**: Gradient hero with quick actions
 - **Statistics Cards**: Visual stats display (ready for real data)
@@ -99,6 +108,7 @@ frontend/
 - **Sidebar Actions**: Quick access to important functionality
 
 ### Demo Page
+
 - **Development Tracking**: Visual progress tracker for all phases
 - **API Health Check**: Real-time backend connectivity monitoring
 - **Interactive Cards**: Hover effects and status indicators
@@ -151,6 +161,7 @@ The frontend connects to the FastAPI backend running on `http://localhost:8000` 
 ## 📱 Responsive Design
 
 The application is fully responsive with:
+
 - **Mobile-first approach**: Designed for mobile and scaled up
 - **Breakpoint optimization**: Tailored layouts for different screen sizes
 - **Touch-friendly**: Appropriate button sizes and spacing
@@ -159,18 +170,21 @@ The application is fully responsive with:
 ## 🎯 Key Features Implemented
 
 ### Modern UI Components
+
 - Custom Button component with variants and sizes
 - Gradient backgrounds and hover effects
 - Icon integration with Lucide React
 - Dark mode support (CSS custom properties ready)
 
 ### Professional Layout
+
 - Consistent spacing and typography
 - Visual hierarchy with proper contrast
 - Loading states and interactive feedback
 - Status indicators and progress tracking
 
 ### Developer Experience
+
 - TypeScript strict mode enabled
 - ESLint and Prettier configuration
 - Hot reload and fast refresh
@@ -186,12 +200,14 @@ The application is fully responsive with:
 ## 🔧 Configuration
 
 ### Tailwind CSS
+
 - Custom color palette with CSS custom properties
 - Extended theme with consistent spacing
 - Component-friendly utility classes
 - Dark mode support built-in
 
 ### TypeScript
+
 - Strict compilation settings
 - Path aliases for clean imports
 - Comprehensive type checking
@@ -218,6 +234,7 @@ The application is fully responsive with:
 Phase 0 has been successfully completed with the following achievements:
 
 ### ✅ Technical Setup
+
 - Next.js 15 with App Router
 - TypeScript with strict configuration
 - Tailwind CSS with custom design system
@@ -225,6 +242,7 @@ Phase 0 has been successfully completed with the following achievements:
 - Environment variable configuration
 
 ### ✅ UI Implementation
+
 - Professional landing page with hero section and feature showcase
 - Modern authentication pages with split layouts
 - Comprehensive dashboard with feature preview
@@ -232,15 +250,17 @@ Phase 0 has been successfully completed with the following achievements:
 - Responsive design across all breakpoints
 
 ### ✅ Component Architecture
+
 - Reusable Button component with variants
 - Utility functions for class name merging
 - API client with interceptors and error handling
 - Health check utilities for backend monitoring
 
 ### ✅ Developer Experience
+
 - Hot reload and fast refresh
 - TypeScript auto-completion and error checking
 - Linting and formatting automation
 - Clear project structure and documentation
 
-The frontend is now ready for Phase 1 implementation, with a solid foundation for authentication, state management, and feature development. 
+The frontend is now ready for Phase 1 implementation, with a solid foundation for authentication, state management, and feature development.

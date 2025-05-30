@@ -46,15 +46,16 @@ const phases: PhaseData[] = [
     id: 1,
     title: 'Authentication & User Management',
     description: 'User registration, login, logout, profile management, and protected routes',
-    status: 'current',
+    status: 'completed',
     icon: Shield,
-    features: ['User Registration', 'Login/Logout', 'JWT Management', 'Protected Routes', 'Profile Updates']
+    features: ['User Registration', 'Login/Logout', 'JWT Management', 'Protected Routes', 'Profile Updates'],
+    route: '/auth/login'
   },
   {
     id: 2,
     title: 'File Management',
     description: 'Upload, view, list, and share files with intelligent organization',
-    status: 'locked',
+    status: 'current',
     icon: FileText,
     features: ['File Upload', 'File Sharing', 'Metadata Management', 'Access Control', 'File Preview']
   },
@@ -343,6 +344,7 @@ export default function DemoPage() {
             <p>• Each phase builds upon the previous ones, following the implementation guide.</p>
             <p>• API connectivity is checked automatically every 30 seconds.</p>
             <p>• Completed phases will show direct navigation links to implemented features.</p>
+            <p>• <strong>Phase 1 Complete:</strong> Authentication system with login, registration, and profile management is now fully functional!</p>
           </div>
         </div>
       </div>

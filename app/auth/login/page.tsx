@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import LoginForm from '@/components/auth/LoginForm';
 import { Lock, User, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
@@ -47,70 +48,14 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Phase 1 Notice */}
-          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-              🚧 Coming in Phase 1
-            </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              Login functionality will be implemented in Phase 1: Authentication & User Management. 
-              This includes secure JWT authentication, password validation, and session management.
-            </p>
-          </div>
-
-          {/* Planned Features */}
-          <div className="space-y-4 mb-6">
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                What's coming in the login form:
-              </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  <span>Email/Username and Password fields</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  <span>Form validation and error handling</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  <span>Remember me functionality</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  <span>Password recovery option</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  <span>Automatic redirect to dashboard</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+          {/* Login Form */}
+          <LoginForm />
 
           {/* Navigation */}
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Don't have an account?{' '}
-                <Link 
-                  href="/auth/register" 
-                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium"
-                >
-                  Create one here
-                </Link>
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
-              <Button variant="outline" asChild className="flex-1">
-                <Link href="/">Back to Home</Link>
-              </Button>
-              <Button asChild className="flex-1">
-                <Link href="/demo">View Demo</Link>
-              </Button>
-            </div>
+          <div className="mt-6">
+            <Button variant="outline" asChild className="w-full">
+              <Link href="/">Back to Home</Link>
+            </Button>
           </div>
         </div>
       </div>
