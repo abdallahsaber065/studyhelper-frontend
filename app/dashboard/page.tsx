@@ -18,7 +18,9 @@ import {
   Clock,
   TrendingUp,
   User,
-  Loader2
+  Loader2,
+  Upload,
+  CheckCircle
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -88,9 +90,11 @@ export default function DashboardPage() {
               Your personalized dashboard for AI-powered learning and collaboration.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" size="sm" disabled>
-                <Plus className="w-4 h-4 mr-2" />
-                Upload Files (Coming Soon)
+              <Button variant="secondary" size="sm" asChild>
+                <Link href="/files/upload">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Files
+                </Link>
               </Button>
               <Button variant="outline" size="sm" className="text-white border-white hover:bg-white hover:text-blue-600">
                 <TrendingUp className="w-4 h-4 mr-2" />
@@ -148,8 +152,8 @@ export default function DashboardPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">File Management</h3>
-                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
-                  Phase 2
+                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-full">
+                  Available
                 </span>
               </div>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -165,10 +169,20 @@ export default function DashboardPage() {
                   <p className="text-xs text-gray-600 dark:text-gray-400">Secure sharing with access control</p>
                 </div>
               </div>
-              <Button disabled variant="outline" className="w-full">
-                <Clock className="w-4 h-4 mr-2" />
-                Coming Soon
-              </Button>
+              <div className="flex space-x-3">
+                <Button asChild className="flex-1">
+                  <Link href="/files/upload">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Files
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="flex-1">
+                  <Link href="/files">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Manage Files
+                  </Link>
+                </Button>
+              </div>
             </div>
 
             {/* AI Content Generation */}

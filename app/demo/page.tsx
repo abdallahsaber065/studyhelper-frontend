@@ -1,350 +1,385 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { checkApiHealth } from '@/lib/health-check';
-import { 
-  CheckCircle, 
-  Clock, 
-  Lock, 
-  Activity, 
-  Users, 
-  FileText, 
-  Brain, 
-  MessageSquare, 
-  Settings, 
-  BarChart, 
-  Shield,
-  Rocket,
-  ArrowLeft,
-  AlertCircle,
-  Wifi
-} from 'lucide-react';
+import { CheckCircle, Clock, Upload, FileText, User, Lock, ExternalLink } from 'lucide-react';
 
-interface PhaseData {
+interface Phase {
   id: number;
   title: string;
   description: string;
-  status: 'completed' | 'current' | 'locked';
-  icon: React.ComponentType<any>;
+  status: 'completed' | 'coming-soon';
   features: string[];
-  route?: string;
+  links?: { label: string; href: string }[];
 }
 
-const phases: PhaseData[] = [
-  {
-    id: 0,
-    title: 'Project Setup & Initial Configuration',
-    description: 'Next.js foundation, UI components, API setup, and basic layout',
-    status: 'completed',
-    icon: Rocket,
-    features: ['Next.js App Router', 'Tailwind CSS', 'TypeScript', 'API Client', 'Modern UI Components'],
-    route: '/'
-  },
+const phases: Phase[] = [
   {
     id: 1,
     title: 'Authentication & User Management',
-    description: 'User registration, login, logout, profile management, and protected routes',
+    description: 'Complete user authentication system with secure login, registration, and profile management.',
     status: 'completed',
-    icon: Shield,
-    features: ['User Registration', 'Login/Logout', 'JWT Management', 'Protected Routes', 'Profile Updates'],
-    route: '/auth/login'
+    features: [
+      'User registration with validation',
+      'Secure login with JWT tokens',
+      'Profile viewing and editing',
+      'Password requirements and validation',
+      'Automatic token refresh',
+      'Protected routes'
+    ],
+    links: [
+      { label: 'Login', href: '/auth/login' },
+      { label: 'Register', href: '/auth/register' },
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Profile', href: '/profile' }
+    ]
   },
   {
     id: 2,
     title: 'File Management',
-    description: 'Upload, view, list, and share files with intelligent organization',
-    status: 'current',
-    icon: FileText,
-    features: ['File Upload', 'File Sharing', 'Metadata Management', 'Access Control', 'File Preview']
+    description: 'Upload, organize, and share study materials with intelligent file processing.',
+    status: 'completed',
+    features: [
+      'Drag & drop file upload',
+      'File type validation (PDF, DOC, TXT)',
+      'Upload progress tracking',
+      'File listing with search and pagination',
+      'File sharing with access control',
+      'File details and metadata'
+    ],
+    links: [
+      { label: 'Upload Files', href: '/files/upload' },
+      { label: 'Manage Files', href: '/files' }
+    ]
   },
   {
     id: 3,
     title: 'AI-Powered Content Generation',
-    description: 'Generate summaries and MCQs using artificial intelligence',
-    status: 'locked',
-    icon: Brain,
-    features: ['AI Summaries', 'MCQ Generation', 'Custom Instructions', 'Content Management', 'Markdown Support']
+    description: 'Generate intelligent summaries and MCQs from uploaded documents using AI.',
+    status: 'coming-soon',
+    features: [
+      'AI-powered document summarization',
+      'Automatic MCQ generation',
+      'Custom instruction support',
+      'Summary editing and management',
+      'Content quality assessment'
+    ]
   },
   {
     id: 4,
     title: 'MCQs, Quizzes, and Sessions',
-    description: 'Create, manage, and take interactive quizzes with progress tracking',
-    status: 'locked',
-    icon: Activity,
-    features: ['Quiz Creation', 'Question Management', 'Quiz Sessions', 'Progress Tracking', 'Results Analytics']
+    description: 'Create, manage, and take interactive quizzes with detailed analytics.',
+    status: 'coming-soon',
+    features: [
+      'MCQ question creation and editing',
+      'Quiz builder with question selection',
+      'Interactive quiz taking interface',
+      'Session management and scoring',
+      'Performance analytics'
+    ]
   },
   {
     id: 5,
     title: 'Communities & Collaboration',
-    description: 'Join study groups, collaborate with peers, and share knowledge',
-    status: 'locked',
-    icon: Users,
-    features: ['Community Creation', 'Member Management', 'Content Sharing', 'Subject Organization', 'Collaboration Tools']
+    description: 'Join study communities and collaborate with peers on shared materials.',
+    status: 'coming-soon',
+    features: [
+      'Community creation and management',
+      'Subject organization',
+      'Member management with roles',
+      'Shared content within communities',
+      'Community-specific discussions'
+    ]
   },
   {
     id: 6,
     title: 'Content Interactions',
-    description: 'Comment, rate, and engage with content across the platform',
-    status: 'locked',
-    icon: MessageSquare,
-    features: ['Comments System', 'Rating System', 'Threaded Discussions', 'Engagement Analytics', 'Moderation Tools']
+    description: 'Comment, rate, and engage with shared content and discussions.',
+    status: 'coming-soon',
+    features: [
+      'Threaded comments system',
+      'Content rating and reviews',
+      'Like and reaction system',
+      'User engagement tracking',
+      'Moderation tools'
+    ]
   },
   {
     id: 7,
     title: 'User Preferences & Notifications',
-    description: 'Customize user experience and manage notification preferences',
-    status: 'locked',
-    icon: Settings,
-    features: ['User Preferences', 'Notification Management', 'Theme Settings', 'Privacy Controls', 'Account Settings']
+    description: 'Customize your experience and stay updated with smart notifications.',
+    status: 'coming-soon',
+    features: [
+      'User preference management',
+      'Notification system',
+      'Email and in-app notifications',
+      'Notification preferences',
+      'Real-time updates'
+    ]
   },
   {
     id: 8,
     title: 'Content Versioning & Analytics',
-    description: 'Track content changes and analyze performance metrics',
-    status: 'locked',
-    icon: BarChart,
-    features: ['Version Control', 'Performance Analytics', 'Usage Statistics', 'Content Insights', 'Progress Reports']
+    description: 'Advanced content management with version control and detailed analytics.',
+    status: 'coming-soon',
+    features: [
+      'Content version history',
+      'Change tracking and comparison',
+      'Usage analytics and insights',
+      'Performance metrics',
+      'Data visualization'
+    ]
   }
 ];
 
 export default function DemoPage() {
-  const [apiStatus, setApiStatus] = useState<{
-    status: string;
-    message: string;
-    isLoading: boolean;
-  }>({ status: 'loading', message: 'Checking...', isLoading: true });
+  const [apiStatus, setApiStatus] = useState<'checking' | 'healthy' | 'error'>('checking');
 
   useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const result = await checkApiHealth();
-        setApiStatus({
-          status: result.status,
-          message: result.message,
-          isLoading: false
-        });
-      } catch (error) {
-        setApiStatus({
-          status: 'error',
-          message: 'Connection failed',
-          isLoading: false
-        });
-      }
-    };
-
-    checkHealth();
-    
-    // Check API health every 30 seconds
-    const interval = setInterval(checkHealth, 30000);
-    return () => clearInterval(interval);
+    checkApiHealth();
   }, []);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'current':
-        return <Clock className="w-5 h-5 text-blue-600" />;
-      default:
-        return <Lock className="w-5 h-5 text-gray-400" />;
+  const checkApiHealth = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/health`, {
+        method: 'GET'
+      });
+      
+      if (response.ok) {
+        setApiStatus('healthy');
+      } else {
+        setApiStatus('error');
+      }
+    } catch (error) {
+      console.error('API health check failed:', error);
+      setApiStatus('error');
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800';
-      case 'current':
-        return 'border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800';
-      default:
-        return 'border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700';
-    }
-  };
-
-  const getApiStatusDisplay = () => {
-    if (apiStatus.isLoading) {
-      return (
-        <div className="flex items-center space-x-2 text-gray-600">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          <span>Checking API status...</span>
-        </div>
-      );
-    }
-
-    if (apiStatus.status === 'success') {
-      return (
-        <div className="flex items-center space-x-2 text-green-600">
-          <Wifi className="w-4 h-4" />
-          <span className="font-medium">API Status: Healthy ✅</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center space-x-2 text-red-600">
-        <AlertCircle className="w-4 h-4" />
-        <span className="font-medium">API Status: Unreachable ❌</span>
-      </div>
-    );
-  };
+  const completedPhases = phases.filter(phase => phase.status === 'completed');
+  const upcomingPhases = phases.filter(phase => phase.status === 'coming-soon');
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" asChild>
-                <Link href="/" className="flex items-center space-x-2">
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Home</span>
-                </Link>
-              </Button>
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Development Demo
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Study Helper Development Demo
               </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                Track implementation progress and test completed features
+              </p>
             </div>
             <div className="flex items-center space-x-4">
-              {getApiStatusDisplay()}
+              {/* API Status */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">API Status:</span>
+                <div className="flex items-center space-x-2">
+                  {apiStatus === 'checking' && (
+                    <>
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-yellow-600 dark:text-yellow-400">Checking...</span>
+                    </>
+                  )}
+                  {apiStatus === 'healthy' && (
+                    <>
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-green-600 dark:text-green-400">Healthy ✅</span>
+                    </>
+                  )}
+                  {apiStatus === 'error' && (
+                    <>
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-sm text-red-600 dark:text-red-400">Unreachable ❌</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" onClick={checkApiHealth}>
+                Refresh
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* API Health Check Section */}
+        {/* Progress Overview */}
         <div className="mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
-              <Activity className="w-5 h-5" />
-              <span>Backend Connectivity</span>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Development Progress
             </h2>
-            <div className="space-y-2">
-              {getApiStatusDisplay()}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Backend URL: {process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}
-              </p>
-              {apiStatus.status === 'error' && (
-                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                  <p className="text-sm text-red-600 dark:text-red-400">
-                    Make sure your FastAPI backend is running on the configured URL.
-                  </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {completedPhases.length}
                 </div>
-              )}
+                <div className="text-sm text-gray-600 dark:text-gray-400">Completed Phases</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                  {upcomingPhases.length}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Upcoming Phases</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {Math.round((completedPhases.length / phases.length) * 100)}%
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Overall Progress</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Phase Progress Tracker */}
+        {/* Completed Phases */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Implementation Progress
+            ✅ Completed Features
           </h2>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {phases.map((phase) => {
-              const IconComponent = phase.icon;
-              
-              return (
-                <div
-                  key={phase.id}
-                  className={`p-6 rounded-lg border transition-all duration-200 hover:shadow-md ${getStatusColor(phase.status)}`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${
-                        phase.status === 'completed' 
-                          ? 'bg-green-100 dark:bg-green-900/30' 
-                          : phase.status === 'current'
-                          ? 'bg-blue-100 dark:bg-blue-900/30'
-                          : 'bg-gray-100 dark:bg-gray-700'
-                      }`}>
-                        <IconComponent className={`w-5 h-5 ${
-                          phase.status === 'completed' 
-                            ? 'text-green-600' 
-                            : phase.status === 'current'
-                            ? 'text-blue-600'
-                            : 'text-gray-400'
-                        }`} />
-                      </div>
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Phase {phase.id}
-                      </span>
-                    </div>
-                    {getStatusIcon(phase.status)}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {completedPhases.map((phase) => (
+              <div
+                key={phase.id}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-800 p-6"
+              >
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
-
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {phase.title}
-                  </h3>
-                  
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    {phase.description}
-                  </p>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Key Features:
-                    </h4>
-                    <ul className="space-y-1">
-                      {phase.features.map((feature, index) => (
-                        <li key={index} className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Phase {phase.id}: {phase.title}
+                    </h3>
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                      Available for testing
+                    </p>
                   </div>
-
-                  {phase.status === 'completed' && phase.route && (
-                    <Button 
-                      asChild 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                    >
-                      <Link href={phase.route}>
-                        View Implementation
-                      </Link>
-                    </Button>
-                  )}
-
-                  {phase.status === 'current' && (
-                    <div className="w-full p-2 bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md">
-                      <p className="text-xs text-blue-700 dark:text-blue-300 text-center font-medium">
-                        Currently in Development
-                      </p>
-                    </div>
-                  )}
-
-                  {phase.status === 'locked' && (
-                    <div className="w-full p-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                        Coming Soon
-                      </p>
-                    </div>
-                  )}
                 </div>
-              );
-            })}
+                
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  {phase.description}
+                </p>
+                
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Implemented Features:
+                  </h4>
+                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    {phase.features.map((feature, index) => (
+                      <li key={index} className="flex items-center space-x-2">
+                        <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {phase.links && (
+                  <div className="flex flex-wrap gap-2">
+                    {phase.links.map((link, index) => (
+                      <Button
+                        key={index}
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
+                      >
+                        <Link href={link.href}>
+                          {link.label}
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </Link>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Development Notes */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Development Notes
+        {/* Upcoming Phases */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            🚧 Coming Soon
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {upcomingPhases.map((phase) => (
+              <div
+                key={phase.id}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 opacity-75"
+              >
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Phase {phase.id}: {phase.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                      In development
+                    </p>
+                  </div>
+                </div>
+                
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  {phase.description}
+                </p>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Planned Features:
+                  </h4>
+                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    {phase.features.map((feature, index) => (
+                      <li key={index} className="flex items-center space-x-2">
+                        <Clock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Navigation */}
+        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
+            🚀 Quick Navigation
           </h3>
-          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-            <p>• This demo page tracks the implementation progress of the Study Helper frontend.</p>
-            <p>• Each phase builds upon the previous ones, following the implementation guide.</p>
-            <p>• API connectivity is checked automatically every 30 seconds.</p>
-            <p>• Completed phases will show direct navigation links to implemented features.</p>
-            <p>• <strong>Phase 1 Complete:</strong> Authentication system with login, registration, and profile management is now fully functional!</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/">
+                <User className="w-4 h-4 mr-2" />
+                Homepage
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/auth/login">
+                <Lock className="w-4 h-4 mr-2" />
+                Login
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/files/upload">
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Files
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/files">
+                <FileText className="w-4 h-4 mr-2" />
+                Manage Files
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
