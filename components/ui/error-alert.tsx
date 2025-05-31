@@ -1,119 +1,68 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { parseApiError, formatValidationErrors } from '@/lib/error-handler';
-import { AlertCircle, X, AlertTriangle, Info } from 'lucide-react';
+'use client';
 
-interface ErrorAlertProps extends React.HTMLAttributes<HTMLDivElement> {
-  error?: any;
-  message?: string;
-  variant?: 'error' | 'warning' | 'info';
-  showIcon?: boolean;
+import React from 'react';
+import { AlertTriangle, X } from 'lucide-react';
+
+interface ErrorAlertProps {
+  error: any;
   dismissible?: boolean;
   onDismiss?: () => void;
 }
 
-const ErrorAlert = React.forwardRef<HTMLDivElement, ErrorAlertProps>(
-  ({ 
-    error, 
-    message, 
-    variant = 'error',
-    showIcon = true,
-    dismissible = false,
-    onDismiss,
-    className, 
-    ...props 
-  }, ref) => {
-    const [isVisible, setIsVisible] = React.useState(true);
-
-    if (!isVisible) return null;
-
-    // Parse the error if provided
-    const parsedError = error ? parseApiError(error) : null;
-    const displayMessage = message || parsedError?.message || 'An error occurred';
-    const isValidationError = parsedError?.isValidationError || false;
-    const validationErrors = parsedError?.details ? formatValidationErrors(parsedError.details) : [];
-
-    const handleDismiss = () => {
-      setIsVisible(false);
-      onDismiss?.();
-    };
-
-    const getVariantClasses = () => {
-      switch (variant) {
-        case 'error':
-          return 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300';
-        case 'warning':
-          return 'border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
-        case 'info':
-          return 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-        default:
-          return 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300';
-      }
-    };
-
-    const getIcon = () => {
-      switch (variant) {
-        case 'error':
-          return <AlertCircle className="h-4 w-4 flex-shrink-0" />;
-        case 'warning':
-          return <AlertTriangle className="h-4 w-4 flex-shrink-0" />;
-        case 'info':
-          return <Info className="h-4 w-4 flex-shrink-0" />;
-        default:
-          return <AlertCircle className="h-4 w-4 flex-shrink-0" />;
-      }
-    };
-
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          'relative rounded-lg border p-4',
-          getVariantClasses(),
-          className
-        )}
-        {...props}
-      >
-        <div className="flex items-start space-x-3">
-          {showIcon && getIcon()}
-          
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">{displayMessage}</p>
-            
-            {/* Show validation errors if present */}
-            {isValidationError && validationErrors.length > 0 && (
-              <div className="mt-2">
-                <ul className="text-xs space-y-1 list-disc list-inside opacity-90">
-                  {validationErrors.map((validationError, index) => (
-                    <li key={index}>{validationError}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Show error type for debugging in development */}
-            {process.env.NODE_ENV === 'development' && parsedError && (
-              <p className="text-xs opacity-70 mt-1">
-                Error Type: {parsedError.type} ({parsedError.statusCode})
-              </p>
-            )}
-          </div>
-
-          {dismissible && (
-            <button
-              onClick={handleDismiss}
-              className="flex-shrink-0 p-1 hover:opacity-70 transition-opacity"
-              aria-label="Dismiss error"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+export function ErrorAlert({ error, dismissible = false, onDismiss }: ErrorAlertProps) {
+  const errorMessage = getErrorMessage(error);
+  
+  return (
+    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-md relative">
+      <div className="flex items-start">
+        <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="font-medium">Error</p>
+          <p className="text-sm">{errorMessage}</p>
         </div>
+        {dismissible && onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="ml-4 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none"
+            aria-label="Dismiss"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
-    );
+    </div>
+  );
+}
+
+function getErrorMessage(error: any): string {
+  if (!error) {
+    return 'An unknown error occurred';
   }
-);
-
-ErrorAlert.displayName = 'ErrorAlert';
-
-export { ErrorAlert }; 
+  
+  // Handle error strings
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  // Handle error objects
+  if (error.message) {
+    return error.message;
+  }
+  
+  // Handle Axios error responses
+  if (error.response?.data?.detail) {
+    return error.response.data.detail;
+  }
+  
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+  
+  // Handle object with error details
+  if (error.detail) {
+    return error.detail;
+  }
+  
+  // Fallback for other error types
+  return 'An unexpected error occurred';
+} 

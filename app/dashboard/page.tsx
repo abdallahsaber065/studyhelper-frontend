@@ -21,19 +21,84 @@ import {
   TrendingUp,
   User,
   Loader2,
-  Upload,
-  CheckCircle
+  FolderOpen,
+  ListChecks,
+  Share2,
+  Zap,
+  Activity
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, logout, isLoading: authLoading } = useProtectedRoute();
-  const [stats, setStats] = useState({
-    filesCount: 0,
-    summariesCount: 0,
-    quizzesCount: 0,
-    communitiesCount: 0
+  const { user, isLoading: authLoading } = useProtectedRoute();
+  const [fileStats, setFileStats] = useState({ 
+    totalFiles: 0,
+    sharedWithMe: 0,
+    sharedByMe: 0 
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
   const [showLoading, setShowLoading] = useState(false);
+
+  // Feature cards for the dashboard
+  const featureCards = [
+    {
+      title: 'My Files',
+      description: 'Manage your uploaded files and documents',
+      icon: <FolderOpen className="w-8 h-8 text-blue-500" />,
+      href: '/files',
+      color: 'blue',
+      gradient: 'from-blue-500 to-blue-600'
+    },
+    {
+      title: 'Generate Summary',
+      description: 'Create AI-powered summaries from your files',
+      icon: <Brain className="w-8 h-8 text-purple-500" />,
+      href: '/summaries/generate',
+      color: 'purple',
+      gradient: 'from-purple-500 to-purple-600'
+    },
+    {
+      title: 'Generate MCQs',
+      description: 'Create practice questions from your study materials',
+      icon: <MessageSquare className="w-8 h-8 text-teal-500" />,
+      href: '/mcqs/generate',
+      color: 'teal',
+      gradient: 'from-teal-500 to-teal-600'
+    },
+    {
+      title: 'My Summaries',
+      description: 'View and manage your generated summaries',
+      icon: <FileText className="w-8 h-8 text-indigo-500" />,
+      href: '/summaries',
+      color: 'indigo',
+      gradient: 'from-indigo-500 to-indigo-600'
+    },
+    {
+      title: 'My Quizzes',
+      description: 'Practice with quizzes created from your materials',
+      icon: <ListChecks className="w-8 h-8 text-amber-500" />,
+      href: '/mcqs/quizzes',
+      color: 'amber',
+      gradient: 'from-amber-500 to-amber-600',
+      comingSoon: true
+    },
+    {
+      title: 'Communities',
+      description: 'Join or create study groups with shared resources',
+      icon: <Users className="w-8 h-8 text-emerald-500" />,
+      href: '/communities',
+      color: 'emerald',
+      gradient: 'from-emerald-500 to-emerald-600',
+      comingSoon: true
+    }
+  ];
+
+  // Recent activity mock data
+  const recentActivity = [
+    { type: 'upload', title: 'Uploaded a new file', time: '2 hours ago' },
+    { type: 'summary', title: 'Generated a summary', time: '5 hours ago' },
+    { type: 'mcq', title: 'Created MCQ questions', time: '1 day ago' },
+  ];
 
   // Handle loading state client-side only
   useEffect(() => {
@@ -41,27 +106,48 @@ export default function DashboardPage() {
     setShowLoading(authLoading);
   }, [authLoading]);
 
-  // Fetch stats when user is loaded
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!user) return;
-      
+    const fetchFileStats = async () => {
       try {
-        // Fetch files count
-        const files = await filesService.getFiles({});
-        setStats(prev => ({
-          ...prev,
-          filesCount: files.length
-        }));
+        setLoading(true);
+        setError(null);
+        const files = await filesService.getFiles();
         
-        // TODO: Fetch other stats when those endpoints are implemented
+        // Calculate file stats
+        const totalFiles = files.length;
+        const sharedWithMe = files.filter(file => !file.is_owner).length;
+        
+        // For shared by me, get the access list for each file the user owns
+        let sharedByMe = 0;
+        for (const file of files) {
+          if (file.is_owner) {
+            try {
+              const accessList = await filesService.getFileAccess(file.id);
+              if (accessList && accessList.length > 0) {
+                sharedByMe++;
+              }
+            } catch (err) {
+              // Ignore errors for individual file access lists
+              console.error(`Failed to get access list for file ${file.id}:`, err);
+            }
+          }
+        }
+        
+        setFileStats({
+          totalFiles,
+          sharedWithMe,
+          sharedByMe
+        });
       } catch (error) {
-        console.error('Failed to fetch stats:', error);
+        console.error('Failed to fetch file stats:', error);
+        setError(error);
+      } finally {
+        setLoading(false);
       }
     };
-    
+
     if (user) {
-      fetchStats();
+      fetchFileStats();
     }
   }, [user]);
 
@@ -71,7 +157,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );
@@ -83,285 +169,179 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="text-xl font-bold text-primary">
-                Study Helper
-              </Link>
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Dashboard
-              </h1>
+      {/* Hero Section with Gradient */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-800 dark:to-purple-800">
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Welcome back, {user.username}!</h1>
+              <p className="text-blue-100 max-w-2xl">
+                Your personal study assistant is ready to help you learn more efficiently. 
+                Create summaries, generate practice questions, and collaborate with others.
+              </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                <Search className="w-4 h-4" />
+            <div className="mt-6 md:mt-0">
+              <Button asChild className="bg-white text-blue-600 hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700">
+                <Link href="/files/upload" className="flex items-center">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Upload New File
+                </Link>
               </Button>
-              <Button variant="ghost" size="sm">
-                <Bell className="w-4 h-4" />
-              </Button>
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" asChild size="sm">
-                  <Link href="/profile" className="flex items-center space-x-2">
-                    <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">{user.first_name}</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" onClick={logout} size="sm">
-                  Sign Out
-                </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 -mt-8">
+        {/* Stats Row - Elevated Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center">
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Files</h3>
+                <div className="mt-1">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    {loading ? '-' : fileStats.totalFiles}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center">
+              <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Shared with Me</h3>
+                <div className="mt-1">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    {loading ? '-' : fileStats.sharedWithMe}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center">
+              <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
+                <Share2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Shared by Me</h3>
+                <div className="mt-1">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    {loading ? '-' : fileStats.sharedByMe}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
-            <h2 className="text-2xl font-bold mb-2">
-              Welcome back, {user.first_name}! 👋
+        <div className="flex flex-col lg:flex-row gap-8 mb-8">
+          {/* Main Content Area */}
+          <div className="lg:w-2/3">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              <span className="flex items-center">
+                <Zap className="w-6 h-6 mr-2 text-amber-500" />
+                Quick Actions
+              </span>
             </h2>
-            <p className="text-blue-100 mb-4">
-              Your personalized dashboard for AI-powered learning and collaboration.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" size="sm" asChild>
-                <Link href="/files/upload">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Files
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" className="text-white border-white hover:bg-white hover:text-blue-600">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                View Progress
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Files Uploaded</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.filesCount}</p>
-              </div>
-              <FileText className="w-8 h-8 text-blue-500" />
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">AI Summaries</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.summariesCount}</p>
-              </div>
-              <Brain className="w-8 h-8 text-purple-500" />
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Quizzes Taken</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.quizzesCount}</p>
-              </div>
-              <Award className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Communities</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.communitiesCount}</p>
-              </div>
-              <Users className="w-8 h-8 text-orange-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Primary Features */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* File Management Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">File Management</h3>
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-full">
-                  Available
-                </span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Upload, organize, and share your study materials with intelligent categorization.
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">Smart Upload</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Drag & drop with progress tracking</p>
+            
+            {/* Feature Cards - Grid with color highlights */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {featureCards.slice(0, 4).map((feature, index) => (
+                <div
+                  key={index}
+                  className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 ${feature.comingSoon ? 'opacity-70' : ''}`}
+                >
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${feature.gradient}`}></div>
+                  <div className="p-6">
+                    <div className="flex items-start">
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20 mb-4`}>
+                        {feature.icon}
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {feature.title}
+                          {feature.comingSoon && (
+                            <span className="ml-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                              Coming Soon
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                          {feature.description}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      asChild
+                      variant={feature.comingSoon ? "outline" : "default"}
+                      disabled={feature.comingSoon}
+                      className="w-full mt-2"
+                    >
+                      <Link href={feature.comingSoon ? "#" : feature.href} className="flex items-center justify-center">
+                        {feature.comingSoon ? 'Coming Soon' : 'Get Started'}
+                        {!feature.comingSoon && <ArrowRight className="w-4 h-4 ml-2" />}
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">File Sharing</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Secure sharing with access control</p>
-                </div>
-              </div>
-              <div className="flex space-x-3">
-                <Button asChild className="flex-1">
-                  <Link href="/files/upload">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Files
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="flex-1">
-                  <Link href="/files">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Manage Files
-                  </Link>
-                </Button>
-              </div>
-            </div>
-
-            {/* AI Content Generation */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Content Generation</h3>
-                <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-full">
-                  Phase 3
-                </span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Generate intelligent summaries and MCQs from your study materials using AI.
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">Smart Summaries</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">AI-powered content extraction</p>
-                </div>
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">MCQ Generation</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Automatic quiz creation</p>
-                </div>
-              </div>
-              <Button disabled variant="outline" className="w-full">
-                <Clock className="w-4 h-4 mr-2" />
-                Coming Soon
-              </Button>
-            </div>
-
-            {/* Quiz System */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Interactive Quizzes</h3>
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-full">
-                  Phase 4
-                </span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Create custom quizzes, take tests, and track your learning progress.
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">Quiz Builder</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Create custom question sets</p>
-                </div>
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">Progress Tracking</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Detailed performance analytics</p>
-                </div>
-              </div>
-              <Button disabled variant="outline" className="w-full">
-                <Clock className="w-4 h-4 mr-2" />
-                Coming Soon
-              </Button>
+              ))}
             </div>
           </div>
 
-          {/* Right Column - Secondary Features */}
-          <div className="space-y-6">
-            {/* Study Communities */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Communities</h3>
-                <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 rounded-full">
-                  Phase 5
-                </span>
+          {/* Sidebar */}
+          <div className="lg:w-1/3">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <Activity className="w-5 h-5 mr-2 text-blue-500" />
+                Recent Activity
+              </h2>
+              <div className="space-y-4">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-start border-b border-gray-100 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center 
+                      ${activity.type === 'upload' ? 'bg-blue-100 dark:bg-blue-900/20' : 
+                        activity.type === 'summary' ? 'bg-purple-100 dark:bg-purple-900/20' : 
+                        'bg-teal-100 dark:bg-teal-900/20'}`}>
+                      {activity.type === 'upload' ? 
+                        <FileText className="w-4 h-4 text-blue-600" /> : 
+                        activity.type === 'summary' ? 
+                        <Brain className="w-4 h-4 text-purple-600" /> : 
+                        <MessageSquare className="w-4 h-4 text-teal-600" />}
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Join study groups and collaborate with peers.
-              </p>
-              <Button disabled variant="outline" className="w-full">
-                <Users className="w-4 h-4 mr-2" />
-                Explore Communities
-              </Button>
-            </div>
-
-            {/* Content Interactions */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Interactions</h3>
-                <span className="px-2 py-1 text-xs bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 rounded-full">
-                  Phase 6
-                </span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Comment, rate, and engage with content.
-              </p>
-              <Button disabled variant="outline" className="w-full">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                View Discussions
-              </Button>
-            </div>
-
-            {/* Analytics */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Analytics</h3>
-                <span className="px-2 py-1 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-full">
-                  Phase 8
-                </span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Track your learning progress and performance.
-              </p>
-              <Button disabled variant="outline" className="w-full">
-                <BarChart className="w-4 h-4 mr-2" />
-                View Reports
-              </Button>
-            </div>
-
-            {/* Settings */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h3>
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-full">
-                  Available
-                </span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Manage your account and preferences.
-              </p>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/profile">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Manage Profile
-                </Link>
-              </Button>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <Button asChild variant="ghost" className="w-full justify-start">
-                  <Link href="/">
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    Back to Home
-                  </Link>
-                </Button>
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Coming soon features</h3>
+                <div className="space-y-2">
+                  {featureCards.slice(4).map((feature, index) => (
+                    <div key={index} className="flex items-center py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20`}>
+                        {feature.icon}
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{feature.title}</p>
+                      </div>
+                      <div className="ml-auto">
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Soon</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

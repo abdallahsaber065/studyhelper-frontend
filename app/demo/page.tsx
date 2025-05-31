@@ -16,10 +16,21 @@ interface Phase {
 
 const phases: Phase[] = [
   {
+    id: 0,
+    title: "Project Setup & Initial Configuration",
+    description: "Next.js project foundation, UI components, and API communication layer.",
+    status: "completed",
+    features: [],
+    links: [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Demo Page", href: "/demo" },
+    ],
+  },
+  {
     id: 1,
-    title: 'Authentication & User Management',
-    description: 'Complete user authentication system with secure login, registration, and profile management.',
-    status: 'completed',
+    title: "Authentication & User Management",
+    description: "User registration, login, logout, profile viewing, and updates.",
+    status: "completed",
     features: [
       'User registration with validation',
       'Secure login with JWT tokens',
@@ -29,17 +40,16 @@ const phases: Phase[] = [
       'Protected routes'
     ],
     links: [
-      { label: 'Login', href: '/auth/login' },
-      { label: 'Register', href: '/auth/register' },
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: 'Profile', href: '/profile' }
-    ]
+      { label: "Login", href: "/auth/login" },
+      { label: "Register", href: "/auth/register" },
+      { label: "Profile", href: "/profile" },
+    ],
   },
   {
     id: 2,
-    title: 'File Management',
-    description: 'Upload, organize, and share study materials with intelligent file processing.',
-    status: 'completed',
+    title: "File Management",
+    description: "Upload, view, list, and share files.",
+    status: "completed",
     features: [
       'Drag & drop file upload',
       'File type validation (PDF, DOC, TXT)',
@@ -49,35 +59,40 @@ const phases: Phase[] = [
       'File details and metadata'
     ],
     links: [
-      { label: 'Upload Files', href: '/files/upload' },
-      { label: 'Manage Files', href: '/files' }
-    ]
+      { label: "Files List", href: "/files" },
+      { label: "Upload File", href: "/files/upload" },
+    ],
   },
   {
     id: 3,
-    title: 'AI-Powered Content Generation',
-    description: 'Generate intelligent summaries and MCQs from uploaded documents using AI.',
-    status: 'coming-soon',
+    title: "AI-Powered Content Generation",
+    description: "Generate summaries and MCQs using AI.",
+    status: "completed",
     features: [
       'AI-powered document summarization',
       'Automatic MCQ generation',
       'Custom instruction support',
       'Summary editing and management',
       'Content quality assessment'
-    ]
+    ],
+    links: [
+      { label: "Generate Summary", href: "/summaries/generate" },
+      { label: "My Summaries", href: "/summaries" },
+      { label: "Generate MCQs", href: "/mcqs/generate" },
+    ],
   },
   {
     id: 4,
-    title: 'MCQs, Quizzes, and Sessions',
-    description: 'Create, manage, and take interactive quizzes with detailed analytics.',
-    status: 'coming-soon',
+    title: "MCQs, Quizzes, and Sessions",
+    description: "Create and manage quizzes, track sessions.",
+    status: "coming-soon",
     features: [
       'MCQ question creation and editing',
       'Quiz builder with question selection',
       'Interactive quiz taking interface',
       'Session management and scoring',
       'Performance analytics'
-    ]
+    ],
   },
   {
     id: 5,
