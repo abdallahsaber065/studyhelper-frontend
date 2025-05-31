@@ -43,12 +43,19 @@ export default function FileDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
   const [analytics, setAnalytics] = useState<any>({
     views: 0,
     downloads: 0,
     summaries: 0,
     quizzes: 0
   });
+
+  // Handle loading state client-side only
+  useEffect(() => {
+    // Only show loading spinner on the client
+    setShowLoading(authLoading || loading);
+  }, [authLoading, loading]);
 
   const loadFileDetails = useCallback(async () => {
     try {
@@ -126,7 +133,8 @@ export default function FileDetailsPage() {
     }
   };
 
-  if (authLoading || loading) {
+  // Render loading state only on client after first render
+  if (showLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

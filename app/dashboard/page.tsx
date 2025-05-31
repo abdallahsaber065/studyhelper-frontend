@@ -26,13 +26,20 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, logout, isLoading } = useProtectedRoute();
+  const { user, logout, isLoading: authLoading } = useProtectedRoute();
   const [stats, setStats] = useState({
     filesCount: 0,
     summariesCount: 0,
     quizzesCount: 0,
     communitiesCount: 0
   });
+  const [showLoading, setShowLoading] = useState(false);
+
+  // Handle loading state client-side only
+  useEffect(() => {
+    // Only show loading spinner on the client
+    setShowLoading(authLoading);
+  }, [authLoading]);
 
   // Fetch stats when user is loaded
   useEffect(() => {
@@ -58,7 +65,8 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  if (isLoading) {
+  // Render loading state only on client after first render
+  if (showLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

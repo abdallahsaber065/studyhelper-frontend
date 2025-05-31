@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,13 @@ export default function FileUploadPage() {
   const [uploadedFiles, setUploadedFiles] = useState<FileUploadResponse[]>([]);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState<any>(null);
+  const [showLoading, setShowLoading] = useState(false);
+  
+  // Handle loading state client-side only
+  useEffect(() => {
+    // Only show loading spinner on the client
+    setShowLoading(authLoading);
+  }, [authLoading]);
 
   const handleUploadSuccess = (files: FileUploadResponse[]) => {
     setUploadedFiles(prev => [...prev, ...files]);
@@ -35,7 +42,8 @@ export default function FileUploadPage() {
     setError(error);
   };
 
-  if (authLoading) {
+  // Render loading state only on client after first render
+  if (showLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

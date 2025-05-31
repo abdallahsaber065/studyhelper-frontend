@@ -32,6 +32,13 @@ export default function FilesPage() {
   });
   const [shareModalFile, setShareModalFile] = useState<FileRead | null>(null);
   const [deleteModalFile, setDeleteModalFile] = useState<FileRead | null>(null);
+  const [showLoading, setShowLoading] = useState(false);
+  
+  // Handle loading state client-side only
+  useEffect(() => {
+    // Only show loading spinner on the client
+    setShowLoading(authLoading);
+  }, [authLoading]);
   
   // Load file statistics
   useEffect(() => {
@@ -80,7 +87,8 @@ export default function FilesPage() {
     console.log('Delete file:', file.id);
   };
 
-  if (authLoading) {
+  // Render loading state only on client after first render
+  if (showLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
