@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,13 +48,7 @@ export default function FileShareModal({
     access_level: 'read'
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      loadAccessList();
-    }
-  }, [isOpen, file.id]);
-
-  const loadAccessList = async () => {
+  const loadAccessList = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -66,7 +60,13 @@ export default function FileShareModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [file.id]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadAccessList();
+    }
+  }, [isOpen, loadAccessList]);
 
   const handleShareFile = async () => {
     if (!newShareData.user_id.trim()) {
