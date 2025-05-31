@@ -25,11 +25,17 @@ import {
   ListChecks,
   Share2,
   Zap,
-  Activity
+  Activity,
+  LogOut
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useUserStore } from '@/store/userStore';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, isLoading: authLoading } = useProtectedRoute();
+  const { logout } = useUserStore();
+  
   const [fileStats, setFileStats] = useState({ 
     totalFiles: 0,
     sharedWithMe: 0,
@@ -38,6 +44,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [showLoading, setShowLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(3); // Mock notification count
 
   // Feature cards for the dashboard
   const featureCards = [
@@ -99,6 +108,34 @@ export default function DashboardPage() {
     { type: 'summary', title: 'Generated a summary', time: '5 hours ago' },
     { type: 'mcq', title: 'Created MCQ questions', time: '1 day ago' },
   ];
+  
+  // Mock notifications data
+  const notifications = [
+    { id: 1, title: 'New summary ready', message: 'Your AI-generated summary is ready to view', time: '10 minutes ago', read: false },
+    { id: 2, title: 'Quiz results available', message: 'Check your results from the recent practice quiz', time: '1 hour ago', read: false },
+    { id: 3, title: 'File shared with you', message: 'User123 shared a study document with you', time: '3 hours ago', read: false },
+  ];
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+  };
+
+  // Handle search submit
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Navigate to search results page or filter content
+      console.log('Searching for:', searchQuery);
+      // router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+      alert(`Search functionality coming soon! Query: ${searchQuery}`);
+    }
+  };
 
   // Handle loading state client-side only
   useEffect(() => {
@@ -169,6 +206,115 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Top Navigation Bar */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo/Title */}
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Study Helper</h1>
+            </div>
+            
+            {/* Search Bar */}
+            <div className={`relative max-w-md flex-1 mx-8 ${isSearchFocused ? 'z-20' : ''}`}>
+              <form onSubmit={handleSearch}>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Search className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search files, summaries, quizzes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </form>
+            </div>
+            
+            {/* User Actions */}
+            <div className="flex items-center space-x-4">
+              {/* Notifications */}
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="relative"
+                  onClick={() => alert('Notifications panel coming soon!')}
+                >
+                  <Bell className="w-5 h-5" />
+                  {notificationCount > 0 && (
+                    <span className="absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {notificationCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
+              
+              {/* Settings */}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => alert('Settings panel coming soon!')}
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+              
+              {/* User Profile */}
+              <div className="flex items-center space-x-3">
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</p>
+                  <Link href="/profile" className="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                    View profile
+                  </Link>
+                </div>
+                <div className="relative group">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="rounded-full bg-gray-200 dark:bg-gray-700 p-2"
+                  >
+                    <User className="w-5 h-5" />
+                  </Button>
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-20 hidden group-hover:block">
+                    <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <Link 
+                        href="/profile" 
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Profile
+                      </Link>
+                      <Link 
+                        href="/settings" 
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Settings
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <div className="flex items-center">
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Logout
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section with Gradient */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-800 dark:to-purple-800">
         <div className="container mx-auto px-4 py-12">
@@ -299,7 +445,51 @@ export default function DashboardPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:w-1/3">
+          <div className="lg:w-1/3 space-y-6">
+            {/* Notifications Panel */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Bell className="w-5 h-5 mr-2 text-red-500" />
+                  Notifications
+                </h2>
+                <Button variant="ghost" size="sm" className="text-xs text-blue-600 dark:text-blue-400">
+                  Mark all as read
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {notifications.map((notification) => (
+                  <div 
+                    key={notification.id}
+                    className={`p-3 rounded-lg ${notification.read ? 'bg-gray-50 dark:bg-gray-700/30' : 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400'}`}
+                  >
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">{notification.title}</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notification.message}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-500">{notification.time}</span>
+                      {!notification.read && (
+                        <span className="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {notifications.length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-gray-400">No new notifications</p>
+                </div>
+              )}
+              
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                <Button variant="ghost" size="sm" className="w-full text-blue-600 dark:text-blue-400">
+                  View all notifications
+                </Button>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Activity className="w-5 h-5 mr-2 text-blue-500" />
