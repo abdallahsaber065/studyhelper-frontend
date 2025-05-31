@@ -9,6 +9,9 @@ export interface FileRead {
   file_size_bytes: number;
   uploaded_at: string; // ISO date-time
   user_id: number;
+  shared_count?: number; // Number of users the file is shared with
+  is_owner?: boolean; // Whether the current user is the owner
+  owner_name?: string; // Name of the file owner
 }
 
 export interface FileUploadResponse {

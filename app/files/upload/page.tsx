@@ -8,6 +8,7 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import FileUpload from '@/components/files/FileUpload';
 import { FileUploadResponse } from '@/types/files';
+import { formatFileSize } from '@/lib/file-utils';
 import { 
   ArrowLeft, 
   CheckCircle, 
@@ -167,7 +168,7 @@ export default function FileUploadPage() {
               </div>
               
               <div className="space-y-3">
-                {uploadedFiles.map((file, index) => (
+                {uploadedFiles.map((uploadResponse, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
@@ -176,10 +177,10 @@ export default function FileUploadPage() {
                       <CheckCircle className="w-5 h-5 text-green-500" />
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {file.original_filename}
+                          {uploadResponse.file.file_name}
                         </p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {(file.size_bytes / (1024 * 1024)).toFixed(2)} MB
+                          {formatFileSize(uploadResponse.file.file_size_bytes)}
                         </p>
                       </div>
                     </div>
@@ -190,7 +191,7 @@ export default function FileUploadPage() {
                         size="sm"
                         asChild
                       >
-                        <Link href={`/files/${file.id}`}>
+                        <Link href={`/files/${uploadResponse.file.id}`}>
                           View Details
                         </Link>
                       </Button>

@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useProtectedRoute } from '@/hooks/useAuth';
+import { filesService } from '@/services/files';
+import { useState, useEffect } from 'react';
 import { 
   FileText, 
   Brain, 
@@ -25,6 +27,36 @@ import {
 
 export default function DashboardPage() {
   const { user, logout, isLoading } = useProtectedRoute();
+  const [stats, setStats] = useState({
+    filesCount: 0,
+    summariesCount: 0,
+    quizzesCount: 0,
+    communitiesCount: 0
+  });
+
+  // Fetch stats when user is loaded
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+      
+      try {
+        // Fetch files count
+        const files = await filesService.getFiles({});
+        setStats(prev => ({
+          ...prev,
+          filesCount: files.length
+        }));
+        
+        // TODO: Fetch other stats when those endpoints are implemented
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      }
+    };
+    
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -110,7 +142,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Files Uploaded</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.filesCount}</p>
               </div>
               <FileText className="w-8 h-8 text-blue-500" />
             </div>
@@ -119,7 +151,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">AI Summaries</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.summariesCount}</p>
               </div>
               <Brain className="w-8 h-8 text-purple-500" />
             </div>
@@ -128,7 +160,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Quizzes Taken</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.quizzesCount}</p>
               </div>
               <Award className="w-8 h-8 text-green-500" />
             </div>
@@ -137,7 +169,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Communities</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.communitiesCount}</p>
               </div>
               <Users className="w-8 h-8 text-orange-500" />
             </div>

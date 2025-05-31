@@ -215,146 +215,178 @@ export default function FileList({
         </div>
       </div>
 
-      {/* Files Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {files.length === 0 ? (
-          <div className="p-8 text-center">
-            <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No files found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {searchTerm ? 'Try adjusting your search terms' : 'Upload your first file to get started'}
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Table Header */}
-            <div className="hidden lg:grid lg:grid-cols-12 gap-4 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-              {selectable && <div className="col-span-1"></div>}
-              <div 
-                className={cn("col-span-4 cursor-pointer hover:text-primary", selectable ? "col-span-3" : "col-span-4")}
+      {/* File List Table */}
+      <div className="relative overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+        <table className="w-full text-sm text-left text-gray-700 dark:text-gray-300">
+          <thead className="text-xs text-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+            <tr>
+              {selectable && (
+                <th scope="col" className="px-4 py-3 w-10">
+                  <span className="sr-only">Select</span>
+                </th>
+              )}
+              <th
+                scope="col"
+                className="px-4 py-3 cursor-pointer"
                 onClick={() => handleSort('name')}
               >
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Name {getSortIcon('name')}
-                </span>
-              </div>
-              <div 
-                className="col-span-2 cursor-pointer hover:text-primary"
+                <div className="flex items-center">
+                  <span>Name</span>
+                  <span className="ml-1 text-gray-500">{getSortIcon('name')}</span>
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-4 py-3 cursor-pointer w-24"
                 onClick={() => handleSort('type')}
               >
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Type {getSortIcon('type')}
-                </span>
-              </div>
-              <div 
-                className="col-span-2 cursor-pointer hover:text-primary"
+                <div className="flex items-center">
+                  <span>Type</span>
+                  <span className="ml-1 text-gray-500">{getSortIcon('type')}</span>
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-4 py-3 cursor-pointer w-24"
                 onClick={() => handleSort('size')}
               >
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Size {getSortIcon('size')}
-                </span>
-              </div>
-              <div 
-                className="col-span-2 cursor-pointer hover:text-primary"
+                <div className="flex items-center">
+                  <span>Size</span>
+                  <span className="ml-1 text-gray-500">{getSortIcon('size')}</span>
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-4 py-3 cursor-pointer w-32 hidden md:table-cell"
                 onClick={() => handleSort('date')}
               >
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Modified {getSortIcon('date')}
-                </span>
-              </div>
-              <div className="col-span-1"></div>
-            </div>
-
-            {/* Table Body */}
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {files.map((file) => (
-                <div
-                  key={String(file.id)}
+                <div className="flex items-center">
+                  <span>Date</span>
+                  <span className="ml-1 text-gray-500">{getSortIcon('date')}</span>
+                </div>
+              </th>
+              <th scope="col" className="px-4 py-3 w-24 text-right">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {files.length === 0 ? (
+              <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                <td colSpan={selectable ? 6 : 5} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No files found.
+                </td>
+              </tr>
+            ) : (
+              files.map((file) => (
+                <tr
+                  key={file.id}
                   className={cn(
-                    'p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors',
-                    'grid grid-cols-1 lg:grid-cols-12 gap-4 items-center',
-                    selectable && selectedFiles.has(String(file.id)) && 'bg-blue-50 dark:bg-blue-900/20'
+                    "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700",
+                    selectedFiles.has(String(file.id)) && "bg-blue-50 dark:bg-blue-900/20"
                   )}
+                  onClick={() => handleFileSelect(file)}
                 >
                   {selectable && (
-                    <div className="lg:col-span-1">
+                    <td className="px-4 py-3 w-10">
                       <input
                         type="checkbox"
+                        className="rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700"
                         checked={selectedFiles.has(String(file.id))}
                         onChange={() => handleFileSelect(file)}
-                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                        onClick={(e) => e.stopPropagation()}
                       />
-                    </div>
+                    </td>
                   )}
-
-                  <div className={cn("lg:col-span-4 flex items-center space-x-3", selectable ? "lg:col-span-3" : "lg:col-span-4")}>
-                    <span className="text-2xl flex-shrink-0">
-                      {getFileTypeIcon(file.file_type)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {file.file_name}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {getFileTypeName(file.file_type)}
-                    </span>
-                  </div>
-
-                  <div className="lg:col-span-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {formatFileSize(file.file_size_bytes)}
-                    </span>
-                  </div>
-
-                  <div className="lg:col-span-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                      <Calendar className="w-3 h-3 mr-1" />
-                      {formatFileDate(file.uploaded_at)}
-                    </span>
-                  </div>
-
-                  <div className="lg:col-span-1 relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setActionMenuFile(String(file.id) === actionMenuFile ? null : String(file.id))}
-                      className="w-8 h-8 p-0"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-
-                    {actionMenuFile === String(file.id) && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10">
-                        <div className="py-1">
-                          <button
-                            onClick={() => handleFileAction('share', file)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            <Share2 className="w-4 h-4 mr-2" />
-                            Share
-                          </button>
-                          <button
-                            onClick={() => handleFileAction('delete', file)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </button>
-                        </div>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl flex-shrink-0">
+                        {getFileTypeIcon(file.file_type)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                          {truncateFilename(file.file_name, 30)}
+                        </p>
+                        {!file.is_owner && file.owner_name && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                            <Share2 className="w-3 h-3 mr-1 text-blue-500" /> 
+                            Shared by {file.owner_name}
+                          </p>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 capitalize">
+                    {getFileTypeName(file.file_type)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {formatFileSize(file.file_size_bytes)}
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    {formatFileDate(file.uploaded_at)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="relative inline-block text-left">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActionMenuFile(actionMenuFile === String(file.id) ? null : String(file.id));
+                        }}
+                        className="p-2 text-gray-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+
+                      {actionMenuFile === String(file.id) && (
+                        <div
+                          className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none divide-y divide-gray-100 dark:divide-gray-700"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="py-1">
+                            <button
+                              onClick={() => {
+                                handleFileAction('view', file);
+                                setActionMenuFile(null);
+                              }}
+                              className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Eye className="w-4 h-4 mr-3" />
+                              View
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleFileAction('share', file);
+                                setActionMenuFile(null);
+                              }}
+                              className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Share2 className="w-4 h-4 mr-3" />
+                              Share
+                            </button>
+                          </div>
+                          {file.is_owner !== false && (
+                            <div className="py-1">
+                              <button
+                                onClick={() => {
+                                  handleFileAction('delete', file);
+                                  setActionMenuFile(null);
+                                }}
+                                className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                <Trash2 className="w-4 h-4 mr-3" />
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Pagination */}

@@ -40,7 +40,10 @@ export default function FileShareModal({
   const [error, setError] = useState<any>(null);
   const [success, setSuccess] = useState('');
   const [showAddUser, setShowAddUser] = useState(false);
-  const [newShareData, setNewShareData] = useState<FileShareRequest>({
+  const [newShareData, setNewShareData] = useState<{
+    user_id: string;
+    access_level: 'read' | 'write' | 'admin';
+  }>({
     user_id: '',
     access_level: 'read'
   });
@@ -70,13 +73,26 @@ export default function FileShareModal({
       setError({ message: 'Please enter a user ID' });
       return;
     }
+    
+    // Validate that user_id is a number
+    const userId = Number(newShareData.user_id);
+    if (isNaN(userId)) {
+      setError({ message: 'User ID must be a number' });
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
       setSuccess('');
 
-      await filesService.shareFile(file.id, newShareData);
+      // Convert user_id string to number before sharing
+      const shareRequest: FileShareRequest = {
+        user_id: userId,
+        access_level: newShareData.access_level
+      };
+
+      await filesService.shareFile(file.id, shareRequest);
       
       setSuccess('File shared successfully!');
       setShowAddUser(false);
@@ -95,7 +111,7 @@ export default function FileShareModal({
     }
   };
 
-  const handleRevokeAccess = async (userId: string) => {
+  const handleRevokeAccess = async (userId: number) => {
     try {
       setLoading(true);
       setError(null);
@@ -218,13 +234,14 @@ export default function FileShareModal({
                     value={newShareData.access_level}
                     onChange={(e) => setNewShareData(prev => ({ 
                       ...prev, 
-                      access_level: e.target.value as 'read' | 'write'
+                      access_level: e.target.value as 'read' | 'write' | 'admin'
                     }))}
                     disabled={loading}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="read">Read Only</option>
                     <option value="write">Read & Write</option>
+                    <option value="admin">Admin</option>
                   </select>
                 </div>
 
@@ -301,13 +318,10 @@ export default function FileShareModal({
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {access.user ? 
-                            `${access.user.first_name} ${access.user.last_name}` : 
-                            `User ${access.user_id}`
-                          }
+                          {access.user_id}
                         </p>
                         <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                          <span>@{access.user?.username || access.user_id}</span>
+                          <span>@{access.user_id}</span>
                           <span>•</span>
                           <span>Shared {formatFileDate(access.granted_at)}</span>
                         </div>
@@ -329,7 +343,7 @@ export default function FileShareModal({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRevokeAccess(access.user_id)}
+                        onClick={() => handleRevokeAccess(Number(access.user_id))}
                         disabled={loading}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                       >

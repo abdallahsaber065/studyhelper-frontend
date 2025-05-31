@@ -69,6 +69,12 @@ export default function FileUpload({
               result 
             } : f)
           );
+          // Add a slight delay before removing the file from the list
+          setTimeout(() => {
+            setUploadingFiles(prev => 
+              prev.filter(f => f.file !== file)
+            );
+          }, 1500);
           resolve(result);
         })
         .catch(error => {

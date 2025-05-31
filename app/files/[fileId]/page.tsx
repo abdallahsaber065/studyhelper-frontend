@@ -43,6 +43,12 @@ export default function FileDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [analytics, setAnalytics] = useState<any>({
+    views: 0,
+    downloads: 0,
+    summaries: 0,
+    quizzes: 0
+  });
 
   const loadFileDetails = useCallback(async () => {
     try {
@@ -70,12 +76,36 @@ export default function FileDetailsPage() {
     }
   }, [fileId]);
 
+  const loadAnalytics = useCallback(async () => {
+    if (!fileId) return;
+    
+    try {
+      const fileIdNum = Number(fileId);
+      const analyticsData = await filesService.getFileAnalytics(fileIdNum);
+      const engagementData = await filesService.getFileEngagement(fileIdNum);
+      
+      setAnalytics({
+        views: analyticsData?.views || 0,
+        downloads: analyticsData?.downloads || 0,
+        summaries: engagementData?.summaries_count || 0,
+        quizzes: engagementData?.quizzes_count || 0
+      });
+      
+      // Increment view count
+      await filesService.incrementFileView(fileIdNum);
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      // Don't set the main error state for analytics failures
+    }
+  }, [fileId]);
+
   useEffect(() => {
     if (fileId) {
       loadFileDetails();
       loadAccessList();
+      loadAnalytics();
     }
-  }, [fileId, loadFileDetails, loadAccessList]);
+  }, [fileId, loadFileDetails, loadAccessList, loadAnalytics]);
 
   const handleDelete = async () => {
     if (!file) return;
@@ -137,8 +167,6 @@ export default function FileDetailsPage() {
     return null;
   }
 
-  const isOwner = file.user_id === parseInt(user.id);
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -157,9 +185,17 @@ export default function FileDetailsPage() {
                 <span className="text-2xl">
                   {getFileTypeIcon(file.file_type)}
                 </span>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white truncate max-w-md">
-                  {file.file_name}
-                </h1>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white truncate max-w-md">
+                    {file.file_name}
+                  </h1>
+                  {!file.is_owner && (
+                    <div className="flex items-center text-sm text-blue-600 dark:text-blue-400 mt-1">
+                      <Share2 className="w-3 h-3 mr-1" />
+                      <span>Shared with you by {file.owner_name || `User ${file.user_id}`}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -167,7 +203,7 @@ export default function FileDetailsPage() {
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
-              {isOwner && (
+              {file.is_owner && (
                 <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-700">
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete
@@ -357,19 +393,27 @@ export default function FileDetailsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Views:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {analytics.views || '-'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Downloads:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {analytics.downloads || '-'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Summaries:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {analytics.summaries || '-'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Quizzes:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {analytics.quizzes || '-'}
+                  </span>
                 </div>
               </div>
             </div>

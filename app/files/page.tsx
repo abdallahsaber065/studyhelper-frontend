@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -18,12 +18,54 @@ import {
   Users,
   Filter
 } from 'lucide-react';
+import { filesService } from '@/services/files';
+import { formatFileSize } from '@/lib/file-utils';
 
 export default function FilesPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useProtectedRoute();
+  
+  const [fileStats, setFileStats] = useState({
+    total: 0,
+    shared: 0,
+    storage: 0
+  });
   const [shareModalFile, setShareModalFile] = useState<FileRead | null>(null);
-  const [error, setError] = useState<any>(null);
+  const [deleteModalFile, setDeleteModalFile] = useState<FileRead | null>(null);
+  
+  // Load file statistics
+  useEffect(() => {
+    const fetchFileStats = async () => {
+      try {
+        const files = await filesService.getFiles({});
+        const totalFiles = files.length;
+        
+        // Count files that are shared with other users (files I own that have been shared)
+        const filesIOwn = files.filter(file => file.is_owner);
+        const sharedByMe = filesIOwn.filter(file => file.shared_count && file.shared_count > 0).length;
+        
+        // Count files shared with me (I don't own them)
+        const sharedWithMe = files.filter(file => !file.is_owner).length;
+        
+        // Total shared files (both directions)
+        const totalShared = sharedByMe + sharedWithMe;
+        
+        const totalStorage = files.reduce((acc, file) => acc + file.file_size_bytes, 0);
+        
+        setFileStats({
+          total: totalFiles,
+          shared: totalShared,
+          storage: totalStorage
+        });
+      } catch (error) {
+        console.error('Failed to fetch file stats:', error);
+      }
+    };
+    
+    if (user) {
+      fetchFileStats();
+    }
+  }, [user]);
 
   const handleFileSelect = (file: FileRead) => {
     router.push(`/files/${file.id}`);
@@ -87,80 +129,61 @@ export default function FilesPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-6">
-            <ErrorAlert 
-              error={error} 
-              dismissible 
-              onDismiss={() => setError(null)}
-            />
-          </div>
-        )}
-
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        {/* File Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                File Management
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Upload, organize, and share your study materials
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total Files
+              </h3>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
+                {fileStats.total}
               </p>
             </div>
+            <FileText className="w-10 h-10 text-blue-500 opacity-80" />
           </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Files</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
-                </div>
-                <FileText className="w-8 h-8 text-blue-500" />
-              </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Shared Files
+              </h3>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
+                {fileStats.shared}
+              </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Shared Files</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
-                </div>
-                <Users className="w-8 h-8 text-green-500" />
-              </div>
+            <Users className="w-10 h-10 text-green-500 opacity-80" />
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Storage Used
+              </h3>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
+                {formatFileSize(fileStats.storage)}
+              </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Storage Used</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
-                </div>
-                <Folder className="w-8 h-8 text-purple-500" />
-              </div>
-            </div>
+            <Folder className="w-10 h-10 text-purple-500 opacity-80" />
           </div>
         </div>
 
-        {/* Files List */}
+        {/* File List */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               All Files
-            </h3>
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
-              </Button>
-            </div>
+            </h2>
+            <Button variant="outline" size="sm">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter
+            </Button>
           </div>
-
+          
           <FileList
             onFileSelect={handleFileSelect}
             onFileShare={handleFileShare}
             onFileDelete={handleFileDelete}
-            selectable={false}
           />
         </div>
       </div>
@@ -169,11 +192,11 @@ export default function FilesPage() {
       {shareModalFile && (
         <FileShareModal
           file={shareModalFile}
-          isOpen={!!shareModalFile}
+          isOpen={Boolean(shareModalFile)}
           onClose={() => setShareModalFile(null)}
           onShareSuccess={() => {
-            // Optionally refresh the file list
-            console.log('File shared successfully');
+            // Refresh the file list to update share status
+            setShareModalFile(null);
           }}
         />
       )}
