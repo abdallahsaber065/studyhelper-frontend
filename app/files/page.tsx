@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,23 +24,9 @@ export default function FilesPage() {
   const { user, isLoading: authLoading } = useProtectedRoute();
   const [shareModalFile, setShareModalFile] = useState<PhysicalFile | null>(null);
   const [error, setError] = useState<any>(null);
-  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
-
-  // Check API connectivity
-  useEffect(() => {
-    const checkApiHealth = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/health`);
-        console.log('API health check response:', response.status, response.ok);
-        setApiConnected(response.ok);
-      } catch (error) {
-        console.error('API health check failed:', error);
-        setApiConnected(false);
-      }
-    };
-    
-    checkApiHealth();
-  }, []);
+  const [totalFiles, setTotalFiles] = useState(0);
+  const [sharedFiles, setSharedFiles] = useState(0);
+  const [storageUsed, setStorageUsed] = useState(0);
 
   const handleFileSelect = (file: PhysicalFile) => {
     router.push(`/files/${file.id}`);
@@ -54,6 +40,15 @@ export default function FilesPage() {
     // TODO: Implement delete confirmation modal
     console.log('Delete file:', file.id);
   };
+
+  // Callback to update stats from FileList
+  const handleFilesLoaded = useCallback((files: PhysicalFile[]) => {
+    setTotalFiles(files.length);
+    setStorageUsed(files.reduce((sum, f) => sum + f.size_bytes, 0));
+    // Shared files: files with more than one user in access list (not perfect, but best effort)
+    // This requires fetching access lists for each file, which is expensive, so for now, set to 0 or leave as TODO
+    setSharedFiles(0); // TODO: Implement if needed
+  }, []);
 
   if (authLoading) {
     return (
@@ -114,35 +109,6 @@ export default function FilesPage() {
           </div>
         )}
 
-        {/* API Connection Status */}
-        {apiConnected === false && (
-          <div className="mb-6">
-            <ErrorAlert 
-              message="Unable to connect to the backend API. Please check if the server is running."
-              variant="error"
-              dismissible={false}
-            />
-          </div>
-        )}
-
-        {/* Authentication Helper */}
-        {!user && (
-          <div className="mb-6">
-            <ErrorAlert 
-              message="You need to be logged in to access your files."
-              variant="warning"
-              dismissible={false}
-            />
-            <div className="mt-4 text-center">
-              <Button asChild>
-                <Link href="/auth/login">
-                  Log In to Continue
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -162,7 +128,7 @@ export default function FilesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Files</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalFiles}</p>
                 </div>
                 <FileText className="w-8 h-8 text-blue-500" />
               </div>
@@ -171,7 +137,7 @@ export default function FilesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Shared Files</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{sharedFiles}</p>
                 </div>
                 <Users className="w-8 h-8 text-green-500" />
               </div>
@@ -180,7 +146,7 @@ export default function FilesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Storage Used</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{(storageUsed / (1024 * 1024)).toFixed(2)} MB</p>
                 </div>
                 <Folder className="w-8 h-8 text-purple-500" />
               </div>
@@ -207,6 +173,7 @@ export default function FilesPage() {
             onFileShare={handleFileShare}
             onFileDelete={handleFileDelete}
             selectable={false}
+            onFilesLoaded={handleFilesLoaded}
           />
         </div>
       </div>

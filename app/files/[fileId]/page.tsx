@@ -166,7 +166,7 @@ export default function FileDetailsPage() {
                 Share
               </Button>
               {isOwner && (
-                <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-700">
+                <Button variant="outline" disabled className="text-red-400 cursor-not-allowed" title="File deletion is not supported by the backend API">
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete
                 </Button>

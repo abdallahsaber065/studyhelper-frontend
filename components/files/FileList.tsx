@@ -24,7 +24,6 @@ import {
   User,
   Calendar,
   FileText,
-  Users,
   Loader2,
   ChevronLeft,
   ChevronRight,
@@ -38,6 +37,7 @@ interface FileListProps {
   onFileDelete?: (file: PhysicalFile) => void;
   selectable?: boolean;
   className?: string;
+  onFilesLoaded?: (files: PhysicalFile[]) => void;
 }
 
 type SortField = 'name' | 'size' | 'type' | 'date';
@@ -48,9 +48,9 @@ export default function FileList({
   onFileShare,
   onFileDelete,
   selectable = false,
-  className
+  className,
+  onFilesLoaded,
 }: FileListProps) {
-  const [mounted, setMounted] = useState(false);
   const [files, setFiles] = useState<PhysicalFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
@@ -65,11 +65,6 @@ export default function FileList({
 
   const itemsPerPage = 20;
 
-  // Handle mounting to prevent hydration issues
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const loadFiles = useCallback(async () => {
     try {
       setLoading(true);
@@ -83,31 +78,22 @@ export default function FileList({
 
       const response = await filesService.getFiles(params);
       
-      // Debug logging to see actual response structure
-      console.log('Files API response:', response);
-      
-      // The service now ensures we get the correct format
-      const filesArray = response.files || [];
-      const totalCount = response.total || 0;
-      
       // Sort files locally since API might not support all sort options
-      const sortedFiles = [...filesArray].sort((a, b) => {
+      const sortedFiles = [...response.files].sort((a, b) => {
         let compareValue = 0;
         
         switch (sortField) {
           case 'name':
-            compareValue = (a.original_filename || '').localeCompare(b.original_filename || '');
+            compareValue = a.original_filename.localeCompare(b.original_filename);
             break;
           case 'size':
-            compareValue = (a.size_bytes || 0) - (b.size_bytes || 0);
+            compareValue = a.size_bytes - b.size_bytes;
             break;
           case 'type':
-            compareValue = (a.content_type || '').localeCompare(b.content_type || '');
+            compareValue = a.content_type.localeCompare(b.content_type);
             break;
           case 'date':
-            const dateA = a.upload_timestamp ? new Date(a.upload_timestamp).getTime() : 0;
-            const dateB = b.upload_timestamp ? new Date(b.upload_timestamp).getTime() : 0;
-            compareValue = dateA - dateB;
+            compareValue = new Date(a.upload_timestamp).getTime() - new Date(b.upload_timestamp).getTime();
             break;
           default:
             compareValue = 0;
@@ -117,45 +103,31 @@ export default function FileList({
       });
 
       setFiles(sortedFiles);
-      setTotalFiles(totalCount);
-      setTotalPages(Math.ceil(totalCount / itemsPerPage));
-    } catch (error: any) {
+      setTotalFiles(response.total);
+      setTotalPages(Math.ceil(response.total / itemsPerPage));
+    } catch (error) {
       console.error('Failed to load files:', error);
-      
-      // Check if this is an authentication error
-      if (error?.response?.status === 403 || error?.response?.status === 401) {
-        setError({
-          message: 'You need to be logged in to view files. Please log in and try again.',
-          type: 'AuthenticationError'
-        });
-      } else if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error')) {
-        setError({
-          message: 'Unable to connect to the server. Please check your internet connection and try again.',
-          type: 'NetworkError'
-        });
-      } else {
-        setError(error);
-      }
-      
-      // Set empty state on error
-      setFiles([]);
-      setTotalFiles(0);
-      setTotalPages(1);
+      setError(error);
     } finally {
       setLoading(false);
     }
   }, [currentPage, searchTerm, sortField, sortOrder]);
 
   useEffect(() => {
-    if (mounted) {
-      loadFiles();
-    }
-  }, [mounted, loadFiles]);
+    loadFiles();
+  }, [loadFiles]);
 
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  // Call onFilesLoaded when files change
+  useEffect(() => {
+    if (onFilesLoaded) {
+      onFilesLoaded(files);
+    }
+  }, [files, onFilesLoaded]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -198,18 +170,6 @@ export default function FileList({
     if (sortField !== field) return null;
     return sortOrder === 'asc' ? '↑' : '↓';
   };
-
-  // Show loading state before component mounts to prevent hydration issues
-  if (!mounted) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading && files.length === 0) {
     return (
