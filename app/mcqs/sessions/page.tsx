@@ -18,7 +18,8 @@ import {
   ListChecks,
   CalendarClock,
   CheckCircle2,
-  Medal
+  Medal,
+  Home
 } from 'lucide-react';
 
 export default function QuizSessionsPage() {
@@ -36,7 +37,7 @@ export default function QuizSessionsPage() {
         setLoading(true);
         setError(null);
         const data = await mcqsService.getUserSessions();
-        setSessions(data);
+        setSessions(data || []); // Ensure we have an array even if the API returns null
       } catch (err) {
         console.error('Failed to fetch quiz sessions:', err);
         setError(err);
@@ -50,14 +51,18 @@ export default function QuizSessionsPage() {
   
   // Function to format date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return 'Invalid date';
+    }
   };
   
   if (loading) {
@@ -70,14 +75,39 @@ export default function QuizSessionsPage() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center mb-6">
-        <Button asChild variant="ghost" className="mr-4">
-          <Link href="/mcqs/quizzes">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Quizzes
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quiz History</h1>
+      {/* Breadcrumb Navigation */}
+      <nav className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+        <Link href="/dashboard" className="hover:text-gray-900 dark:hover:text-white flex items-center">
+          <Home className="w-4 h-4 mr-1" />
+          <span>Dashboard</span>
+        </Link>
+        <span className="mx-2">/</span>
+        <Link href="/mcqs/quizzes" className="hover:text-gray-900 dark:hover:text-white">
+          Quizzes
+        </Link>
+        <span className="mx-2">/</span>
+        <span className="text-gray-900 dark:text-white font-medium">Quiz History</span>
+      </nav>
+      
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button asChild variant="ghost" className="mr-4">
+            <Link href="/mcqs/quizzes">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Quizzes
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quiz History</h1>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <Button asChild variant="outline">
+            <Link href="/dashboard">
+              <Home className="w-4 h-4 mr-2" />
+              Dashboard
+            </Link>
+          </Button>
+        </div>
       </div>
       
       {error && <ErrorAlert error={error} className="mb-6" />}

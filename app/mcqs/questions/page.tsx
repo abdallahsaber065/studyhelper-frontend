@@ -262,130 +262,150 @@ export default function McqQuestionsPage() {
         </div>
       </div>
 
-      {/* Questions List */}
+      {/* Questions list */}
       {questions.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">No questions found</p>
+          <div className="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            <BookOpen className="w-8 h-8 text-gray-500 dark:text-gray-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">No questions found</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            {selectedTagId || selectedDifficulty || showMyQuestions 
+              ? 'Try changing your filters or create a new question.' 
+              : 'Get started by creating your first question.'}
+          </p>
           <Button asChild>
-            <Link href="/mcqs/questions/new">Create your first question</Link>
+            <Link href="/mcqs/questions/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Create New Question
+            </Link>
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {questions.map(question => (
-            <div
-              key={question.id}
-              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-            >
-              <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-800/80 flex items-center justify-between">
-                <div className="flex items-center">
-                  <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400 mr-2" />
-                  <h3 className="font-medium text-gray-900 dark:text-white">Question</h3>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {questions.map(question => (
+              <div 
+                key={question.id} 
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full"
+              >
+                <div className="p-6 flex-grow">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                        {question.question_text}
+                      </h3>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {renderDifficultyBadge(question.difficulty_level)}
+                        
+                        {question.tags && question.tags.map(tag => (
+                          <span 
+                            key={tag.id}
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                          >
+                            <Tag className="w-3 h-3 mr-1" />
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2 mb-4">
+                    {['A', 'B', 'C', 'D'].map(option => {
+                      const optionKey = `option_${option.toLowerCase()}` as keyof typeof question;
+                      const optionValue = question[optionKey] as string;
+                      const isCorrect = question.correct_option === option;
+                      
+                      return (
+                        <div 
+                          key={option}
+                          className={`p-2 rounded-md text-sm ${
+                            isCorrect 
+                              ? 'bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400' 
+                              : 'bg-gray-50 border border-gray-200 text-gray-700 dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start">
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full mr-2 ${
+                              isCorrect 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-400' 
+                                : 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-300'
+                            } flex-shrink-0 text-xs`}>
+                              {option}
+                            </span>
+                            <span className="line-clamp-1">{optionValue}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {renderDifficultyBadge(question.difficulty_level)}
+                
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <div className="flex justify-between items-center">
+                    <Button asChild variant="outline" size="sm" className="text-gray-700 dark:text-gray-300">
+                      <Link href={`/mcqs/questions/${question.id}`}>
+                        View Details
+                      </Link>
+                    </Button>
+                    
+                    <div className="flex space-x-2">
+                      <Button 
+                        asChild
+                        variant="ghost" 
+                        size="sm"
+                        className="text-blue-600 dark:text-blue-400"
+                      >
+                        <Link href={`/mcqs/questions/${question.id}/edit`}>
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-red-600 dark:text-red-400"
+                        onClick={() => handleDeleteQuestion(question.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="p-4">
-                <Link
-                  href={`/mcqs/questions/${question.id}`}
-                  className="text-lg font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 line-clamp-2 mb-3 block"
+            ))}
+          </div>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
                 >
-                  {question.question_text}
-                </Link>
+                  Previous
+                </Button>
                 
-                <div className="space-y-2 mb-4">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 flex items-start">
-                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-xs mr-2 flex-shrink-0">A</span>
-                    <span className="line-clamp-1">{question.option_a}</span>
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 flex items-start">
-                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-xs mr-2 flex-shrink-0">B</span>
-                    <span className="line-clamp-1">{question.option_b}</span>
-                  </div>
-                  {question.option_c && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 flex items-start">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-xs mr-2 flex-shrink-0">C</span>
-                      <span className="line-clamp-1">{question.option_c}</span>
-                    </div>
-                  )}
-                  {question.option_d && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 flex items-start">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-xs mr-2 flex-shrink-0">D</span>
-                      <span className="line-clamp-1">{question.option_d}</span>
-                    </div>
-                  )}
-                </div>
+                <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                  Page {page} of {totalPages}
+                </span>
                 
-                {question.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {question.tags.map(tag => (
-                      <span 
-                        key={tag.id}
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                      >
-                        <Tag className="w-3 h-3 mr-1" />
-                        {tag.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-2 flex justify-between items-center">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Created: {new Date(question.created_at).toLocaleDateString()}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/mcqs/questions/${question.id}`} className="text-blue-600 dark:text-blue-400">
-                        <ArrowUpRight className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/mcqs/questions/${question.id}/edit`}>
-                        <Edit className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteQuestion(question.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-6">
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-            >
-              Previous
-            </Button>
-            <span className="flex items-center px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md">
-              Page {page} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

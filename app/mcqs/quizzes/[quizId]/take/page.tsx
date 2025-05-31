@@ -50,53 +50,59 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
   
   // Extract quizId from params and sessionId from search params
   const quizId = parseInt(params.quizId, 10);
-  const sessionId = searchParams ? parseInt(searchParams.get('session') || '0', 10) : 0;
+  const sessionParam = searchParams ? searchParams.get('session') : null;
+  const sessionId = sessionParam ? parseInt(sessionParam, 10) : 0;
   
   // Load quiz and session data
   useEffect(() => {
     const fetchQuizAndSession = async () => {
-      if (isNaN(quizId) || isNaN(sessionId) || sessionId === 0) {
-        setError(new Error("Invalid quiz ID or session ID"));
-        setLoading(false);
-        return;
-      }
-      
       try {
         setLoading(true);
         setError(null);
 
         // Get the quiz data first
         const quizData = await mcqsService.getQuizById(quizId);
-        if (!quizData) throw new Error('Quiz not found');
-        
-        // Then get the session
-        const sessionData = await mcqsService.getSession(sessionId);
-        if (!sessionData) throw new Error('Session not found');
-        
-        // If session is already completed, show results
-        if (sessionData.completed_at) {
-          setShowingResults(true);
+        if (!quizData) {
+          setError(new Error('Quiz not found'));
+          setLoading(false);
+          return;
         }
         
-        // Finally get the questions (they should come with the quiz, but in case they don't)
+        // Set quiz and questions regardless of session
+        setQuiz(quizData as McqQuizWithQuestions);
         const questionsData = Array.isArray((quizData as any).questions) 
           ? (quizData as any).questions 
           : [];
-        
-        setQuiz(quizData as McqQuizWithQuestions);
-        setSession(sessionData);
         setQuestions(questionsData);
         
-        // If we have answers in the session, populate them
-        if (sessionData.answers_json) {
-          const answers: { [key: number]: string } = {};
-          sessionData.answers_json.forEach((answer: any) => {
-            answers[answer.question_id] = answer.selected_option;
-          });
-          setUserAnswers(answers);
+        // Only try to get session if sessionId is valid
+        if (!isNaN(sessionId) && sessionId > 0) {
+          try {
+            const sessionData = await mcqsService.getSession(sessionId);
+            
+            // If session is already completed, show results
+            if (sessionData.completed_at) {
+              setShowingResults(true);
+            }
+            
+            setSession(sessionData);
+            
+            // If we have answers in the session, populate them
+            if (sessionData.answers_json) {
+              const answers: { [key: number]: string } = {};
+              sessionData.answers_json.forEach((answer: any) => {
+                answers[answer.question_id] = answer.selected_option;
+              });
+              setUserAnswers(answers);
+            }
+          } catch (sessionErr) {
+            console.error('Failed to fetch session:', sessionErr);
+            // If session fetch fails, we'll start a new session later
+            // Don't set error here as we can still allow user to start the quiz
+          }
         }
       } catch (err) {
-        console.error('Failed to fetch quiz and session:', err);
+        console.error('Failed to fetch quiz:', err);
         setError(err);
       } finally {
         setLoading(false);
@@ -221,17 +227,92 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
     );
   }
   
-  if (!quiz || !session || !questions.length) {
+  if (!quiz || !questions.length) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+          <div className="w-16 h-16 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+            <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+          </div>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Quiz Not Found</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             The quiz you're looking for doesn't exist or has no questions.
           </p>
-          <Button asChild>
-            <Link href="/mcqs/quizzes">Back to Quizzes</Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild>
+              <Link href="/mcqs/quizzes">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Quizzes
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard">
+                <Home className="w-4 h-4 mr-2" />
+                Dashboard
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!session) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-8">
+          <div className="flex items-center mb-6">
+            <Button asChild variant="ghost" className="mr-4">
+              <Link href={`/mcqs/quizzes/${quizId}`}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Quiz Details
+              </Link>
+            </Button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{quiz.title}</h1>
+          </div>
+          
+          <div className="text-center py-8">
+            <div className="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+              <ListChecks className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Start a New Quiz Session</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto">
+              {!sessionParam ? 
+                "You're ready to start taking this quiz!" : 
+                "We couldn't find your previous session. Start a new one instead?"}
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    const newSession = await mcqsService.startQuizSession(quizId);
+                    router.push(`/mcqs/quizzes/${quizId}/take?session=${newSession.id}`);
+                  } catch (err) {
+                    setError(err);
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="flex items-center"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ListChecks className="w-4 h-4 mr-2" />
+                )}
+                Start Quiz
+              </Button>
+              
+              <Button asChild variant="outline">
+                <Link href="/mcqs/quizzes">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to All Quizzes
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -432,10 +432,10 @@ export default function DashboardPage() {
               {featureCards.slice(0, 6).map((feature, index) => (
                 <div
                   key={index}
-                  className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 ${feature.comingSoon ? 'opacity-70' : ''}`}
+                  className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-64 ${feature.comingSoon ? 'opacity-70' : ''}`}
                 >
                   <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${feature.gradient}`}></div>
-                  <div className="p-6">
+                  <div className="p-6 flex flex-col h-full">
                     <div className="flex items-start mb-4">
                       <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20`}>
                         {feature.icon}
@@ -449,22 +449,24 @@ export default function DashboardPage() {
                             </span>
                           )}
                         </h3>
-                        <p className="text-gray-600 dark:text-gray-400">
+                        <p className="text-gray-600 dark:text-gray-400 line-clamp-2">
                           {feature.description}
                         </p>
                       </div>
                     </div>
-                    <Button
-                      asChild
-                      variant={feature.comingSoon ? "outline" : "default"}
-                      disabled={feature.comingSoon}
-                      className="w-full mt-2"
-                    >
-                      <Link href={feature.comingSoon ? "#" : feature.href} className="flex items-center justify-center">
-                        <span>Get Started</span>
-                        {!feature.comingSoon && <ArrowRight className="w-4 h-4 ml-2" />}
-                      </Link>
-                    </Button>
+                    <div className="mt-auto">
+                      <Button
+                        asChild
+                        variant={feature.comingSoon ? "outline" : "default"}
+                        disabled={feature.comingSoon}
+                        className="w-full"
+                      >
+                        <Link href={feature.comingSoon ? "#" : feature.href} className="flex items-center justify-center">
+                          <span>Get Started</span>
+                          {!feature.comingSoon && <ArrowRight className="w-4 h-4 ml-2" />}
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
