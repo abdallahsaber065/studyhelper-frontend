@@ -44,16 +44,22 @@ function getErrorMessage(error: any): string {
     return error;
   }
   
-  // Handle error objects
+  // Handle error objects with message property
   if (error.message) {
     return error.message;
   }
   
-  // Handle Axios error responses
+  // Handle API error format
+  if (error.response?.data?.error?.message) {
+    return error.response.data.error.message;
+  }
+  
+  // Handle Axios error responses in legacy format
   if (error.response?.data?.detail) {
     return error.response.data.detail;
   }
   
+  // Handle nested error in response
   if (error.response?.data?.message) {
     return error.response.data.message;
   }

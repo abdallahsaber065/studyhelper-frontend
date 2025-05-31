@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-export default function TakeQuizPage({ params }: { params: { quizId: string } }) {
+export default function TakeQuizPage({ params }: { params: Promise<{ quizId: string }> }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useProtectedRoute();
@@ -49,7 +49,8 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
   const [elapsedTime, setElapsedTime] = useState<string>('00:00');
   
   // Extract quizId from params and sessionId from search params
-  const quizId = parseInt(params.quizId, 10);
+  const { quizId } = use(params);
+  const parsedQuizId = parseInt(quizId, 10);
   const sessionParam = searchParams ? searchParams.get('session') : null;
   const sessionId = sessionParam ? parseInt(sessionParam, 10) : 0;
   
@@ -61,7 +62,7 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
         setError(null);
 
         // Get the quiz data first
-        const quizData = await mcqsService.getQuizById(quizId);
+        const quizData = await mcqsService.getQuizById(parsedQuizId);
         if (!quizData) {
           setError(new Error('Quiz not found'));
           setLoading(false);
@@ -110,7 +111,7 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
     };
     
     fetchQuizAndSession();
-  }, [quizId, sessionId]);
+  }, [parsedQuizId, sessionId]);
   
   // Timer for elapsed time
   useEffect(() => {
@@ -296,7 +297,7 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
                 onClick={async () => {
                   try {
                     setLoading(true);
-                    const newSession = await mcqsService.startQuizSession(quizId);
+                    const newSession = await mcqsService.startQuizSession(parsedQuizId);
                     router.push(`/mcqs/quizzes/${quizId}/take?session=${newSession.id}`);
                   } catch (err) {
                     setError(err);
@@ -327,7 +328,7 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
     );
   }
   
-  if (isNaN(quizId) || isNaN(sessionId) || sessionId === 0) {
+  if (isNaN(parsedQuizId) || isNaN(sessionId) || sessionId === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">

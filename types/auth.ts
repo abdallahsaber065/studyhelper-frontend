@@ -39,4 +39,28 @@ export interface AuthResponse {
 export interface ApiError {
   detail: string;
   field?: string;
+}
+
+// Password Reset Types
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetConfirm {
+  token: string;
+  new_password: string;
+}
+
+// Account Activation Types
+export interface ActivationRequest {
+  token: string;
+}
+
+export interface ActivationResponse {
+  message: string;
+  user: User;
+}
+
+export interface PasswordResetResponse {
+  message: string;
 } 

@@ -11,17 +11,23 @@ const apiClient = axios.create({
 // Request interceptor to add JWT token
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage directly to avoid circular dependency
-    const authStorage = localStorage.getItem('auth-storage');
-    if (authStorage) {
+    if (typeof window !== 'undefined') {
       try {
-        const { state } = JSON.parse(authStorage);
-        const token = state?.accessToken;
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        // Get token from localStorage - avoid using parsed state which might be outdated
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage);
+          const token = parsed?.state?.accessToken;
+          
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+            console.log(`Adding token to ${config.url}`);
+          } else {
+            console.warn('No token found in auth storage');
+          }
         }
       } catch (error) {
-        console.error('Error parsing auth storage:', error);
+        console.error('Error accessing auth token:', error);
       }
     }
     return config;
@@ -38,12 +44,13 @@ apiClient.interceptors.response.use(
     // Check if this is an authentication error using our error handler
     if (isAuthError(error)) {
       // Clear auth storage and redirect to login
-      localStorage.removeItem('auth-storage');
-      
-      // Only redirect if we're not already on an auth page
-      if (typeof window !== 'undefined' && 
-          !window.location.pathname.startsWith('/auth/')) {
-        window.location.href = '/auth/login';
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth-storage');
+        
+        // Only redirect if we're not already on an auth page
+        if (!window.location.pathname.startsWith('/auth/')) {
+          window.location.href = '/auth/login';
+        }
       }
     }
 

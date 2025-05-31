@@ -21,6 +21,7 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<any>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -77,6 +78,17 @@ export default function RegisterForm() {
     const result = await register(registrationData);
     
     if (result.success) {
+      setSuccess(
+        `Registration successful! Please check your email (${registrationData.email}) to activate your account.`
+      );
+      setFormData({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        first_name: '',
+        last_name: '',
+      });
       router.push('/dashboard');
     } else {
       setError(result.rawError || { message: result.error });
@@ -96,6 +108,12 @@ export default function RegisterForm() {
           dismissible 
           onDismiss={() => setError(null)}
         />
+      )}
+
+      {success && (
+        <div className="bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 p-4 rounded-md mb-6">
+          {success}
+        </div>
       )}
 
       <div className="grid grid-cols-2 gap-4">

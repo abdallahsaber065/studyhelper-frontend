@@ -1,5 +1,5 @@
 import apiClient from '@/lib/api-client';
-import { LoginRequest, UserCreate, UserUpdate, AuthResponse, User } from '@/types/auth';
+import { LoginRequest, UserCreate, UserUpdate, AuthResponse, User, PasswordResetRequest, PasswordResetConfirm, ActivationRequest } from '@/types/auth';
 
 export const authService = {
   // Login user
@@ -36,4 +36,28 @@ export const authService = {
     const response = await apiClient.post('/auth/refresh');
     return response.data;
   },
+  
+  // Request password reset
+  requestPasswordReset: async (data: PasswordResetRequest): Promise<{ message: string }> => {
+    const response = await apiClient.post('/auth/password-reset', data);
+    return response.data;
+  },
+  
+  // Confirm password reset
+  confirmPasswordReset: async (data: PasswordResetConfirm): Promise<{ message: string }> => {
+    const response = await apiClient.post('/auth/password-reset/confirm', data);
+    return response.data;
+  },
+  
+  // Activate account
+  activateAccount: async (data: ActivationRequest): Promise<{ message: string; user: User }> => {
+    const response = await apiClient.post('/auth/activate', data);
+    return response.data;
+  },
+  
+  // Resend activation email
+  resendActivationEmail: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post('/auth/resend-activation', { email });
+    return response.data;
+  }
 }; 

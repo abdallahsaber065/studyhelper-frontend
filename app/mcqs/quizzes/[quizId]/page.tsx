@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ import {
   Eye
 } from 'lucide-react';
 
-export default function QuizDetailsPage({ params }: { params: { quizId: string } }) {
+export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: string }> }) {
   const router = useRouter();
   const { user } = useProtectedRoute();
   
@@ -38,23 +38,23 @@ export default function QuizDetailsPage({ params }: { params: { quizId: string }
   const [error, setError] = useState<any>(null);
   const [activeSession, setActiveSession] = useState<QuizSessionRead | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
-
+  const { quizId } = use(params);
+  const parsedQuizId = parseInt(quizId, 10);
   // Load quiz details
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
         setLoading(true);
         setError(null);
-        // Convert params.quizId to a number safely
-        const quizId = parseInt(params.quizId, 10);
-        if (isNaN(quizId)) {
+        // Convert params.quizId to a num ber safely
+        if (isNaN(parsedQuizId)) {
           throw new Error("Invalid quiz ID");
         }
-        const data = await mcqsService.getQuizById(quizId);
+        const data = await mcqsService.getQuizById(parsedQuizId);
         setQuiz(data);
         
         // Check for active session for this quiz
-        const session = await mcqsService.getActiveSessionForQuiz(quizId);
+        const session = await mcqsService.getActiveSessionForQuiz(parsedQuizId);
         setActiveSession(session);
       } catch (err) {
         console.error('Failed to fetch quiz:', err);
@@ -65,7 +65,7 @@ export default function QuizDetailsPage({ params }: { params: { quizId: string }
     };
     
     fetchQuiz();
-  }, [params.quizId]);
+  }, [parsedQuizId]);
 
   // Start a quiz session
   const startQuizSession = async () => {

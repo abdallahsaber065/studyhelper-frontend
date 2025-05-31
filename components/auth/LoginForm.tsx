@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,20 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function LoginForm() {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<any>(null);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
+  
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,12 +36,34 @@ export default function LoginForm() {
       return;
     }
 
-    const result = await login(formData);
-    
-    if (result.success) {
-      router.push('/dashboard');
-    } else {
-      setError(result.rawError || { message: result.error });
+    try {
+      const result = await login(formData);
+      
+      if (result.success) {
+        // Explicitly redirect to dashboard
+        router.push('/dashboard');
+      } else {
+        // This branch shouldn't execute since login() throws on error
+        setError({ message: result.error });
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      // Extract error from API response
+      if (error.response?.data?.error) {
+        // New API format
+        setError({ 
+          message: error.response.data.error.message,
+          type: error.response.data.error.type,
+          status: error.response.data.error.status_code
+        });
+      } else if (error.response?.data?.detail) {
+        // Legacy format
+        setError({ message: error.response.data.detail });
+      } else {
+        // Fallback
+        setError({ message: 'Login failed. Please try again.' });
+      }
     }
   };
 
@@ -117,6 +146,24 @@ export default function LoginForm() {
             className="text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium"
           >
             Create one here
+          </Link>
+        </p>
+      </div>
+
+      <div className="text-center">
+        <Link 
+          href="/auth/forgot-password" 
+          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          Forgot Password?
+        </Link>
+      </div>
+
+      <div className="mt-2 text-center">
+        <p className="text-gray-600 dark:text-gray-300">
+          Didn't receive activation email?{' '}
+          <Link href="/auth/resend-activation" className="text-blue-600 dark:text-blue-400 hover:underline">
+            Resend it
           </Link>
         </p>
       </div>
