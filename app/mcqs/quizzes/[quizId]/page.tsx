@@ -25,8 +25,18 @@ import {
   Home,
   ChevronRight,
   BookOpen,
-  Eye
+  Eye,
+  Trash2,
+  Edit
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: string }> }) {
   const router = useRouter();
@@ -38,6 +48,8 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
   const [error, setError] = useState<any>(null);
   const [activeSession, setActiveSession] = useState<QuizSessionRead | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { quizId } = use(params);
   const parsedQuizId = parseInt(quizId, 10);
   // Load quiz details
@@ -110,6 +122,22 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
       console.error('Failed to start new quiz session:', err);
       setError(err);
       setStartingSession(false);
+    }
+  };
+
+  // Handle quiz deletion
+  const handleDeleteQuiz = async () => {
+    if (!quiz) return;
+    
+    try {
+      setDeleting(true);
+      await mcqsService.deleteQuiz(quiz.id);
+      router.push('/mcqs/quizzes');
+    } catch (err) {
+      console.error('Failed to delete quiz:', err);
+      setError(err);
+      setDeleting(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -216,12 +244,23 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
           </Link>
         </Button>
         {quiz.user_id === parseInt(user?.id ?? '') && (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/mcqs/quizzes/${quiz.id}/edit`}>
-              <Tag className="w-4 h-4 mr-2" />
-              Edit Quiz
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/mcqs/quizzes/${quiz.id}/edit`}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Quiz
+              </Link>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
+              onClick={() => setShowDeleteModal(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Quiz
+            </Button>
+          </>
         )}
       </div>
 
@@ -301,50 +340,110 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         </div>
       </div>
       
+      {/* Delete Quiz Confirmation Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Quiz</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this quiz? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteQuiz}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Quiz
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Active Session Modal */}
-      {showSessionModal && activeSession && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6">
-            <div className="mb-4 flex items-center justify-center">
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-              </div>
+      <Dialog open={showSessionModal} onOpenChange={setShowSessionModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Quiz in Progress</DialogTitle>
+            <DialogDescription>
+              You already have an active session for this quiz.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm">
+                Started on {activeSession ? new Date(activeSession.started_at).toLocaleString() : 'N/A'}
+              </span>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-center">
-              Active Quiz Session Found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4 text-center">
-              You have an in-progress quiz session for this quiz. Would you like to resume it or start a new one?
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
-              <Button 
-                onClick={resumeSession}
-                className="flex-1 flex items-center justify-center"
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                Resume Session
-              </Button>
-              <Button 
-                onClick={startNewSession}
-                variant="outline" 
-                className="flex-1 flex items-center justify-center"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Start New Session
-              </Button>
-            </div>
-            <div className="mt-4 text-center">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowSessionModal(false)}
-              >
-                Cancel
-              </Button>
+            <div className="flex items-center space-x-2">
+              <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm">
+                {activeSession?.answers_json?.length || 0} of {activeSession?.total_questions || 0} questions answered
+              </span>
             </div>
           </div>
-        </div>
-      )}
+          
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline"
+              className="flex-1 sm:flex-none"
+              onClick={resumeSession}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Continue Session
+            </Button>
+            <Button 
+              variant="outline"
+              className="flex-1 sm:flex-none text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
+              onClick={async () => {
+                try {
+                  if (activeSession) {
+                    await mcqsService.deleteSession(activeSession.id);
+                    setActiveSession(null);
+                    setShowSessionModal(false);
+                    
+                    // Start a new session
+                    startNewSession();
+                  }
+                } catch (err) {
+                  console.error('Failed to delete session:', err);
+                  setError(err);
+                }
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete & Start New
+            </Button>
+            <Button 
+              variant="outline"
+              className="flex-1 sm:flex-none"
+              onClick={() => setShowSessionModal(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

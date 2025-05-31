@@ -58,6 +58,16 @@ class MCQsService {
     return response.data;
   }
 
+  async updateQuiz(quizId: number, quizData: any) {
+    const response = await apiClient.put<McqQuizRead>(`/mcqs/quizzes/${quizId}`, quizData);
+    return response.data;
+  }
+
+  async deleteQuiz(quizId: number) {
+    await apiClient.delete(`/mcqs/quizzes/${quizId}`);
+    return true;
+  }
+
   // Quiz Sessions
   async startQuizSession(quizId: number) {
     const response = await apiClient.post<QuizSessionRead>(`/mcqs/quizzes/${quizId}/sessions`);
@@ -81,6 +91,25 @@ class MCQsService {
       { answers: formattedAnswers }
     );
     return response.data;
+  }
+
+  async updateSession(sessionId: number, answers: { [key: number]: string }) {
+    // Transform the answers format to match the API expectation
+    const formattedAnswers = Object.entries(answers).map(([questionId, selectedOption]) => ({
+      question_id: parseInt(questionId, 10),
+      selected_option: selectedOption
+    }));
+    
+    const response = await apiClient.put<QuizSessionRead>(
+      `/mcqs/sessions/${sessionId}`, 
+      { answers: formattedAnswers }
+    );
+    return response.data;
+  }
+
+  async deleteSession(sessionId: number) {
+    await apiClient.delete(`/mcqs/sessions/${sessionId}`);
+    return true;
   }
 
   async getUserSessions(params: { skip?: number; limit?: number } = {}) {

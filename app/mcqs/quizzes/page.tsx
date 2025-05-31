@@ -25,12 +25,24 @@ import {
   AlertCircle,
   BookOpen,
   Home,
-  Tag
+  Tag,
+  Edit,
+  Trash2
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function QuizzesPage() {
   const router = useRouter();
   const { user } = useProtectedRoute();
+  const { toast } = useToast();
 
   // State
   const [quizzes, setQuizzes] = useState<McqQuizRead[]>([]);
@@ -53,6 +65,11 @@ export default function QuizzesPage() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
   const [activeSession, setActiveSession] = useState<QuizSessionRead | null>(null);
+
+  // Modal for quiz deletion
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState<McqQuizRead | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Load quizzes and active sessions
   useEffect(() => {
@@ -198,6 +215,47 @@ export default function QuizzesPage() {
     // Search is already handled in the useEffect
   };
 
+  // Handle quiz deletion
+  const handleDeleteQuiz = async () => {
+    if (!quizToDelete) return;
+    
+    try {
+      setDeleting(true);
+      await mcqsService.deleteQuiz(quizToDelete.id);
+      
+      // Remove the deleted quiz from the list
+      setQuizzes(quizzes.filter(quiz => quiz.id !== quizToDelete.id));
+      
+      // Show success message
+      toast({
+        title: "Quiz deleted",
+        description: "The quiz has been deleted successfully.",
+        variant: "success",
+      });
+      
+      // Close the modal
+      setShowDeleteModal(false);
+      setQuizToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete quiz:', err);
+      setError(err);
+      
+      toast({
+        title: "Failed to delete quiz",
+        description: "There was an error deleting the quiz. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Open delete confirmation modal
+  const confirmDelete = (quiz: McqQuizRead) => {
+    setQuizToDelete(quiz);
+    setShowDeleteModal(true);
+  };
+
   if (loading && !quizzes.length) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -246,7 +304,7 @@ export default function QuizzesPage() {
         </div>
       </div>
 
-      {error && <ErrorAlert error={error} className="mb-6" />}
+      {error && <ErrorAlert error={error}/>}
 
       {/* Search and Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
@@ -418,10 +476,30 @@ export default function QuizzesPage() {
                     </Button>
                     <Button asChild variant="outline" className="flex items-center justify-center">
                       <Link href={`/mcqs/quizzes/${quiz.id}`}>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Details
+                        <Eye className="w-4 h-4" />
                       </Link>
                     </Button>
+                    
+                    {/* Show edit/delete buttons for user's own quizzes */}
+                    {user && quiz.user_id === parseInt(user.id) && (
+                      <>
+                        <Button asChild variant="outline" className="flex items-center justify-center">
+                          <Link href={`/mcqs/quizzes/${quiz.id}/edit`}>
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex items-center justify-center text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            confirmDelete(quiz);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -501,6 +579,44 @@ export default function QuizzesPage() {
           </div>
         </div>
       )}
+      
+      {/* Add Delete Confirmation Modal at the end */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Quiz</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{quizToDelete?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteQuiz}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Quiz
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

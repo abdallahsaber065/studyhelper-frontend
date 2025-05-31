@@ -27,11 +27,13 @@ import {
   Home,
   AlertCircle
 } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
 
 export default function TakeQuizPage({ params }: { params: Promise<{ quizId: string }> }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useProtectedRoute();
+  const { toast } = useToast();
   
   // State for quiz data
   const [quiz, setQuiz] = useState<McqQuizWithQuestions | null>(null);
@@ -44,6 +46,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showingResults, setShowingResults] = useState(false);
   const [startTime] = useState<Date>(new Date());
   const [elapsedTime, setElapsedTime] = useState<string>('00:00');
@@ -147,6 +150,39 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       ...prev,
       [questionId]: option
     }));
+  };
+  
+  // Save quiz progress without submitting
+  const saveProgress = async () => {
+    if (!session) return;
+    
+    try {
+      setSaving(true);
+      setError(null);
+      
+      // Update the session with current answers but don't complete it
+      await mcqsService.updateSession(session.id, userAnswers);
+      
+      // Show success message with toast
+      toast({
+        title: "Progress saved",
+        description: "Your quiz progress has been saved successfully.",
+        variant: "success",
+      });
+      
+      setSaving(false);
+    } catch (err) {
+      console.error('Failed to save quiz progress:', err);
+      setError(err);
+      
+      toast({
+        title: "Failed to save progress",
+        description: "There was an error saving your progress. Please try again.",
+        variant: "destructive",
+      });
+      
+      setSaving(false);
+    }
   };
   
   // Submit quiz
@@ -622,70 +658,84 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
             </div>
             
             {/* Question Navigation */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-              <Button 
-                onClick={goToPreviousQuestion}
-                disabled={currentQuestionIndex === 0}
-                variant="outline"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Previous
-              </Button>
-              
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Question {currentQuestionIndex + 1} of {questions.length}
+            <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={goToPreviousQuestion}
+                  disabled={currentQuestionIndex === 0 || showingResults}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                
+                <Button
+                  onClick={goToNextQuestion}
+                  disabled={currentQuestionIndex === questions.length - 1 || showingResults}
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
               </div>
               
-              <Button 
-                onClick={goToNextQuestion}
-                disabled={currentQuestionIndex === questions.length - 1}
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Submit Panel */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between">
-              <div className="mb-4 sm:mb-0">
-                <div className="flex items-center mb-2">
-                  <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    {Object.keys(userAnswers).length} of {questions.length} questions answered
-                  </span>
-                </div>
-                <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 w-full sm:w-64">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full" 
-                    style={{ width: `${(Object.keys(userAnswers).length / questions.length) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <Button 
-                onClick={submitQuiz}
-                disabled={submitting || Object.keys(userAnswers).length === 0}
-                size="lg"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Submit Quiz'
+              <div className="flex items-center space-x-3">
+                {!showingResults && session && (
+                  <Button
+                    onClick={saveProgress}
+                    disabled={submitting || saving || Object.keys(userAnswers).length === 0}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        Save Progress
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
-            </div>
-            
-            {Object.keys(userAnswers).length === 0 && (
-              <div className="mt-4 flex items-center text-amber-600 dark:text-amber-400">
-                <AlertCircle className="w-4 h-4 mr-2" />
-                <span className="text-sm">You need to answer at least one question to submit.</span>
+                
+                {!showingResults && (
+                  <Button
+                    onClick={submitQuiz}
+                    disabled={submitting || !session || Object.keys(userAnswers).length === 0}
+                    size="sm"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Flag className="w-4 h-4 mr-2" />
+                        Submit Quiz
+                      </>
+                    )}
+                  </Button>
+                )}
+                
+                {showingResults && (
+                  <Button
+                    asChild
+                    size="sm"
+                  >
+                    <Link href="/mcqs/sessions">
+                      <ListChecks className="w-4 h-4 mr-2" />
+                      Quiz History
+                    </Link>
+                  </Button>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </>
       )}
