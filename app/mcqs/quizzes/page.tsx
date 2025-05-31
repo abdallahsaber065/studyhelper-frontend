@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import { mcqsService } from '@/services/mcqs';
-import { McqQuizRead, DifficultyLevelEnum } from '@/types/mcqs';
+import { McqQuizRead, DifficultyLevelEnum, QuizSessionRead } from '@/types/mcqs';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import {
   Loader2,
   Plus,
@@ -20,7 +21,11 @@ import {
   Clock,
   Users,
   TrendingUp,
-  CalendarClock
+  CalendarClock,
+  AlertCircle,
+  BookOpen,
+  Home,
+  Tag
 } from 'lucide-react';
 
 export default function QuizzesPage() {
@@ -31,6 +36,7 @@ export default function QuizzesPage() {
   const [quizzes, setQuizzes] = useState<McqQuizRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [activeSessions, setActiveSessions] = useState<Map<number, QuizSessionRead>>(new Map());
 
   // Filters
   const [showMyQuizzes, setShowMyQuizzes] = useState(false);
@@ -42,8 +48,13 @@ export default function QuizzesPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // Modal for active session
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
+  const [activeSession, setActiveSession] = useState<QuizSessionRead | null>(null);
 
-  // Load quizzes
+  // Load quizzes and active sessions
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
@@ -77,6 +88,18 @@ export default function QuizzesPage() {
         
         // For pagination
         setTotalPages(Math.max(1, Math.ceil(searchedData.length / limit)));
+        
+        // Also fetch active sessions for these quizzes
+        const sessions = await mcqsService.getUserSessions();
+        const activeSessionsMap = new Map<number, QuizSessionRead>();
+        
+        sessions.forEach(session => {
+          if (!session.completed_at) {
+            activeSessionsMap.set(session.quiz_id, session);
+          }
+        });
+        
+        setActiveSessions(activeSessionsMap);
       } catch (err) {
         console.error('Failed to fetch quizzes:', err);
         setError(err);
@@ -100,11 +123,47 @@ export default function QuizzesPage() {
   // Start a quiz session
   const startQuizSession = async (quizId: number) => {
     try {
+      // Check if there's an active session for this quiz
+      const existingSession = activeSessions.get(quizId);
+      
+      if (existingSession) {
+        // Show modal with options to resume or start new
+        setSelectedQuizId(quizId);
+        setActiveSession(existingSession);
+        setShowSessionModal(true);
+        return;
+      }
+      
+      // No active session, start a new one
       setLoading(true);
       const session = await mcqsService.startQuizSession(quizId);
       router.push(`/mcqs/quizzes/${quizId}/take?session=${session.id}`);
     } catch (err) {
       console.error('Failed to start quiz session:', err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle resuming a session
+  const resumeSession = (sessionId: number, quizId: number) => {
+    router.push(`/mcqs/quizzes/${quizId}/take?session=${sessionId}`);
+    setShowSessionModal(false);
+  };
+  
+  // Handle starting a new session
+  const startNewSession = async () => {
+    if (!selectedQuizId) return;
+    
+    try {
+      setLoading(true);
+      setShowSessionModal(false);
+      
+      const session = await mcqsService.startQuizSession(selectedQuizId);
+      router.push(`/mcqs/quizzes/${selectedQuizId}/take?session=${session.id}`);
+    } catch (err) {
+      console.error('Failed to start new quiz session:', err);
       setError(err);
     } finally {
       setLoading(false);
@@ -149,6 +208,21 @@ export default function QuizzesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb
+        items={[
+          {
+            label: 'MCQs',
+            href: '/mcqs/questions',
+            icon: <BookOpen className="w-4 h-4" />
+          },
+          {
+            label: 'Quizzes',
+            icon: <ListChecks className="w-4 h-4" />
+          }
+        ]}
+      />
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quizzes</h1>
@@ -156,12 +230,20 @@ export default function QuizzesPage() {
             Browse and take quizzes to test your knowledge
           </p>
         </div>
-        <Button asChild className="mt-4 sm:mt-0">
-          <Link href="/mcqs/quizzes/new" className="flex items-center">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Quiz
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
+          <Button asChild variant="outline">
+            <Link href="/mcqs/sessions" className="flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              Quiz History
+            </Link>
+          </Button>
+          <Button asChild className="mt-4 sm:mt-0">
+            <Link href="/mcqs/quizzes/new" className="flex items-center">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Quiz
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {error && <ErrorAlert error={error} className="mb-6" />}
@@ -252,90 +334,105 @@ export default function QuizzesPage() {
           </div>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">No quizzes found</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
-            {showMyQuizzes 
-              ? "You haven't created any quizzes yet."
-              : showPublicQuizzes
-                ? "There are no public quizzes available."
-                : selectedDifficulty
-                  ? `No ${selectedDifficulty} difficulty quizzes found.`
-                  : searchQuery
-                    ? `No quizzes matching "${searchQuery}" found.`
-                    : "No quizzes available."}
+            {showMyQuizzes || showPublicQuizzes || selectedDifficulty || searchQuery
+              ? 'Try changing your filters or create your own quiz.'
+              : 'Get started by creating your first quiz.'}
           </p>
           <Button asChild>
-            <Link href="/mcqs/quizzes/new">Create your first quiz</Link>
+            <Link href="/mcqs/quizzes/new" className="flex items-center">
+              <Plus className="w-4 h-4 mr-2" />
+              Create New Quiz
+            </Link>
           </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quizzes.map(quiz => (
-            <div 
-              key={quiz.id} 
-              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center">
-                  <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
-                  <h3 className="font-medium text-gray-900 dark:text-white">Quiz</h3>
+          {quizzes.map(quiz => {
+            const hasActiveSession = activeSessions.has(quiz.id);
+            
+            return (
+              <div 
+                key={quiz.id} 
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full"
+              >
+                <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+                    <h3 className="font-medium text-gray-900 dark:text-white">Quiz</h3>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {renderDifficultyBadge(quiz.difficulty_level)}
+                    {quiz.is_public && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                        Public
+                      </span>
+                    )}
+                    {hasActiveSession && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        <Clock className="w-3 h-3 mr-1" />
+                        In Progress
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {renderDifficultyBadge(quiz.difficulty_level)}
-                  {quiz.is_public && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                      <Users className="w-3 h-3 mr-1" />
-                      Public
-                    </span>
+                
+                <div className="p-5 flex-grow">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {quiz.title}
+                  </h2>
+                  {quiz.description && (
+                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                      {quiz.description}
+                    </p>
                   )}
-                </div>
-              </div>
-              
-              <div className="p-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                  {quiz.title}
-                </h2>
-                
-                {quiz.description && (
-                  <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
-                    {quiz.description}
-                  </p>
-                )}
-                
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                    <ListChecks className="w-3 h-3 mr-1" />
-                    {quiz.question_count} questions
-                  </div>
                   
-                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                    <CalendarClock className="w-3 h-3 mr-1" />
-                    {new Date(quiz.created_at).toLocaleDateString()}
+                  <div className="mt-4 flex space-x-3">
+                    <div className="inline-flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                      <ListChecks className="w-4 h-4 mr-1" />
+                      <span>{quiz.question_count} questions</span>
+                    </div>
+                    <div className="inline-flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                      <CalendarClock className="w-4 h-4 mr-1" />
+                      <span>{new Date(quiz.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={() => startQuizSession(quiz.id)}
-                    className="flex-1 flex items-center justify-center"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Take Quiz
-                  </Button>
-                  
-                  <Button asChild variant="outline" className="flex items-center justify-center">
-                    <Link href={`/mcqs/quizzes/${quiz.id}`}>
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                  </Button>
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <div className="flex space-x-3">
+                    <Button 
+                      onClick={() => startQuizSession(quiz.id)}
+                      className="flex-1 flex items-center justify-center"
+                    >
+                      {hasActiveSession ? (
+                        <>
+                          <Clock className="w-4 h-4 mr-2" />
+                          Resume Quiz
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 mr-2" />
+                          Take Quiz
+                        </>
+                      )}
+                    </Button>
+                    <Button asChild variant="outline" className="flex items-center justify-center">
+                      <Link href={`/mcqs/quizzes/${quiz.id}`}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Details
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
-
+      
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-6">
           <div className="flex space-x-2">
             <Button
               variant="outline"
@@ -356,6 +453,51 @@ export default function QuizzesPage() {
             >
               Next
             </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Active Session Modal */}
+      {showSessionModal && activeSession && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6">
+            <div className="mb-4 flex items-center justify-center">
+              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-center">
+              Active Quiz Session Found
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-center">
+              You have an in-progress quiz session for this quiz. Would you like to resume it or start a new one?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+              <Button 
+                onClick={() => resumeSession(activeSession.id, activeSession.quiz_id)}
+                className="flex-1 flex items-center justify-center"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Resume Session
+              </Button>
+              <Button 
+                onClick={startNewSession}
+                variant="outline" 
+                className="flex-1 flex items-center justify-center"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Start New Session
+              </Button>
+            </div>
+            <div className="mt-4 text-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowSessionModal(false)}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
       )}

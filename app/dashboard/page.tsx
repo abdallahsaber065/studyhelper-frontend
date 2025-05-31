@@ -62,22 +62,6 @@ export default function DashboardPage() {
       gradient: 'from-blue-500 to-blue-600'
     },
     {
-      title: 'Generate Summary',
-      description: 'Create AI-powered summaries from your files',
-      icon: <Brain className="w-8 h-8 text-purple-500" />,
-      href: '/summaries/generate',
-      color: 'purple',
-      gradient: 'from-purple-500 to-purple-600'
-    },
-    {
-      title: 'Generate MCQs',
-      description: 'Create practice questions from your study materials',
-      icon: <MessageSquare className="w-8 h-8 text-teal-500" />,
-      href: '/mcqs/generate',
-      color: 'teal',
-      gradient: 'from-teal-500 to-teal-600'
-    },
-    {
       title: 'My Summaries',
       description: 'View and manage your generated summaries',
       icon: <FileText className="w-8 h-8 text-indigo-500" />,

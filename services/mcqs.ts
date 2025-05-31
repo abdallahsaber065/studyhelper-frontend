@@ -88,6 +88,29 @@ class MCQsService {
     return response.data;
   }
 
+  async getActiveSessionForQuiz(quizId: number) {
+    // Get all user sessions
+    const sessions = await this.getUserSessions();
+    
+    // Find an active (not completed) session for the specific quiz
+    const activeSession = sessions.find(session => 
+      session.quiz_id === quizId && 
+      !session.completed_at
+    );
+    
+    return activeSession || null;
+  }
+  
+  async hasActiveQuizSessions() {
+    // Get all user sessions
+    const sessions = await this.getUserSessions();
+    
+    // Check if there are any active (not completed) sessions
+    const hasActiveSessions = sessions.some(session => !session.completed_at);
+    
+    return hasActiveSessions;
+  }
+
   // Tags
   async getTags(params: { skip?: number; limit?: number; search?: string } = {}) {
     const response = await apiClient.get<QuestionTagRead[]>('/mcqs/tags', { params });

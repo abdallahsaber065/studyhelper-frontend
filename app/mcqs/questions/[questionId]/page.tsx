@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,10 @@ import { mcqsService } from '@/services/mcqs';
 import { McqQuestionRead, DifficultyLevelEnum } from '@/types/mcqs';
 import { ArrowLeft, Edit, Trash2, Tag, Check, X } from 'lucide-react';
 
-export default function QuestionDetailsPage({ params }: { params: { questionId: string } }) {
+export default function QuestionDetailsPage({ params }: { params: Promise<{ questionId: string }> }) {
   const router = useRouter();
-  const { user } = useProtectedRoute();
-  
+  const { questionId} = use(params);
+  const parsedId = parseInt(questionId);
   const [question, setQuestion] = useState<McqQuestionRead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
@@ -24,8 +24,12 @@ export default function QuestionDetailsPage({ params }: { params: { questionId: 
       try {
         setLoading(true);
         setError(null);
-        const questionId = Number(params.questionId);
-        const data = await mcqsService.getQuestionById(questionId);
+        
+        if (isNaN(parsedId)) {
+          throw new Error("Invalid question ID");
+        }
+        
+        const data = await mcqsService.getQuestionById(parsedId);
         setQuestion(data);
       } catch (err) {
         console.error('Failed to fetch question:', err);
@@ -36,7 +40,7 @@ export default function QuestionDetailsPage({ params }: { params: { questionId: 
     };
     
     fetchQuestion();
-  }, [params.questionId]);
+  }, [parsedId]);
 
   // Handle deleting the question
   const handleDelete = async () => {

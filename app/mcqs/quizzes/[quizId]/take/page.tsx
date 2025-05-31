@@ -188,7 +188,16 @@ export default function TakeQuizPage({ params }: { params: { quizId: string } })
     const totalQuestions = questions.length;
     const attempted = Object.keys(userAnswers).length;
     const correct = questions.filter(q => userAnswers[q.id] === q.correct_option).length;
-    const score = session.score || Math.round((correct / totalQuestions) * 100);
+    
+    // Fix score calculation:
+    // 1. Use the session.score if available from the API
+    // 2. If not available, calculate it properly as a percentage of correct answers out of total questions
+    // 3. Make sure we round to whole numbers
+    const score = session.score !== null && session.score !== undefined
+      ? session.score 
+      : totalQuestions > 0
+        ? Math.round((correct / totalQuestions) * 100)
+        : 0;
     
     return {
       totalQuestions,

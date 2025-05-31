@@ -8,6 +8,7 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import { mcqsService } from '@/services/mcqs';
 import { McqSessionRead } from '@/types/mcqs';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import {
   ArrowLeft,
   Loader2,
@@ -19,7 +20,9 @@ import {
   CalendarClock,
   CheckCircle2,
   Medal,
-  Home
+  Home,
+  BookOpen,
+  History
 } from 'lucide-react';
 
 export default function QuizSessionsPage() {
@@ -76,32 +79,38 @@ export default function QuizSessionsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb Navigation */}
-      <nav className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-6">
-        <Link href="/dashboard" className="hover:text-gray-900 dark:hover:text-white flex items-center">
-          <Home className="w-4 h-4 mr-1" />
-          <span>Dashboard</span>
-        </Link>
-        <span className="mx-2">/</span>
-        <Link href="/mcqs/quizzes" className="hover:text-gray-900 dark:hover:text-white">
-          Quizzes
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-gray-900 dark:text-white font-medium">Quiz History</span>
-      </nav>
+      <Breadcrumb
+        items={[
+          {
+            label: 'MCQs',
+            href: '/mcqs/questions',
+            icon: <BookOpen className="w-4 h-4" />
+          },
+          {
+            label: 'Quizzes',
+            href: '/mcqs/quizzes',
+            icon: <ListChecks className="w-4 h-4" />
+          },
+          {
+            label: 'Quiz History',
+            icon: <History className="w-4 h-4" />
+          }
+        ]}
+      />
       
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <Button asChild variant="ghost" className="mr-4">
-            <Link href="/mcqs/quizzes">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Quizzes
-            </Link>
-          </Button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quiz History</h1>
         </div>
         
         <div className="flex items-center space-x-3">
           <Button asChild variant="outline">
+            <Link href="/mcqs/quizzes">
+              <ListChecks className="w-4 h-4 mr-2" />
+              Browse Quizzes
+            </Link>
+          </Button>
+          <Button asChild>
             <Link href="/dashboard">
               <Home className="w-4 h-4 mr-2" />
               Dashboard
@@ -138,7 +147,7 @@ export default function QuizSessionsPage() {
                   <h3 className="font-medium text-gray-900 dark:text-white">Quiz Session</h3>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {session.is_completed ? (
+                  {session.completed_at ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                       <CheckCircle2 className="w-3 h-3 mr-1" />
                       Completed
@@ -154,22 +163,22 @@ export default function QuizSessionsPage() {
               
               <div className="p-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                  {session.quiz.title}
+                  {session.quiz?.title || 'Untitled Quiz'}
                 </h2>
                 
                 <div className="flex flex-wrap gap-2 mb-4">
                   <div className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                     <ListChecks className="w-3 h-3 mr-1" />
-                    {session.quiz.question_count} questions
+                    {session.total_questions} questions
                   </div>
                   
                   <div className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                     <CalendarClock className="w-3 h-3 mr-1" />
-                    {formatDate(session.created_at)}
+                    {formatDate(session.started_at)}
                   </div>
                 </div>
                 
-                {session.is_completed && (
+                {session.completed_at && (
                   <div className="mb-4">
                     <div className="relative pt-1">
                       <div className="flex items-center justify-between mb-1">
@@ -198,18 +207,20 @@ export default function QuizSessionsPage() {
                     
                     <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
                       <Clock className="w-3.5 h-3.5 mr-1" />
-                      <span>Time taken: {session.completion_time || 'N/A'}</span>
+                      <span>Time taken: {session.time_taken_seconds ? 
+                        `${Math.floor(session.time_taken_seconds / 60)}:${(session.time_taken_seconds % 60).toString().padStart(2, '0')}` 
+                        : 'N/A'}</span>
                     </div>
                   </div>
                 )}
                 
                 <div className="flex space-x-2">
-                  {session.is_completed ? (
+                  {session.completed_at ? (
                     <Button 
                       asChild
                       className="flex-1 flex items-center justify-center"
                     >
-                      <Link href={`/mcqs/quizzes/${session.quiz.id}/take?session=${session.id}`}>
+                      <Link href={`/mcqs/quizzes/${session.quiz_id}/take?session=${session.id}`}>
                         <BarChart className="w-4 h-4 mr-2" />
                         View Results
                       </Link>
@@ -219,7 +230,7 @@ export default function QuizSessionsPage() {
                       asChild
                       className="flex-1 flex items-center justify-center"
                     >
-                      <Link href={`/mcqs/quizzes/${session.quiz.id}/take?session=${session.id}`}>
+                      <Link href={`/mcqs/quizzes/${session.quiz_id}/take?session=${session.id}`}>
                         <Clock className="w-4 h-4 mr-2" />
                         Continue Quiz
                       </Link>
@@ -227,7 +238,7 @@ export default function QuizSessionsPage() {
                   )}
                   
                   <Button asChild variant="outline" className="flex items-center justify-center">
-                    <Link href={`/mcqs/quizzes/${session.quiz.id}`}>
+                    <Link href={`/mcqs/quizzes/${session.quiz_id}`}>
                       <ExternalLink className="w-4 h-4" />
                     </Link>
                   </Button>

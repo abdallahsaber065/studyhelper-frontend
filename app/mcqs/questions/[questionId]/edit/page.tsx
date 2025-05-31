@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,10 +12,11 @@ import { mcqsService } from '@/services/mcqs';
 import { DifficultyLevelEnum, CorrectAnswerEnum, QuestionTagRead } from '@/types/mcqs';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
-export default function EditQuestionPage({ params }: { params: { questionId: string } }) {
+export default function EditQuestionPage({ params }: { params: Promise<{ questionId: string }> }) {
   const router = useRouter();
   const { user } = useProtectedRoute();
-  
+  const { questionId} = use(params);
+  const parsedId = parseInt(questionId);
   // Form state
   const [questionText, setQuestionText] = useState('');
   const [optionA, setOptionA] = useState('');
@@ -43,10 +44,13 @@ export default function EditQuestionPage({ params }: { params: { questionId: str
       try {
         setLoading(true);
         setError(null);
+                
+        // Handle invalid ID
+        if (isNaN(parsedId)) {
+          throw new Error("Invalid question ID");
+        }
         
-        // Fetch question
-        const questionId = Number(params.questionId);
-        const questionData = await mcqsService.getQuestionById(questionId);
+        const questionData = await mcqsService.getQuestionById(parsedId);
         
         // Set form values
         setQuestionText(questionData.question_text);
@@ -73,7 +77,7 @@ export default function EditQuestionPage({ params }: { params: { questionId: str
     };
     
     fetchQuestionAndTags();
-  }, [params.questionId]);
+  }, [parsedId]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,7 +93,10 @@ export default function EditQuestionPage({ params }: { params: { questionId: str
       setSaving(true);
       setError(null);
       
-      const questionId = Number(params.questionId);
+      if (isNaN(parsedId)) {
+        throw new Error("Invalid question ID");
+      }
+      
       const questionUpdate = {
         question_text: questionText,
         option_a: optionA,
@@ -103,7 +110,7 @@ export default function EditQuestionPage({ params }: { params: { questionId: str
         tag_ids: selectedTagIds
       };
       
-      await mcqsService.updateQuestion(questionId, questionUpdate);
+      await mcqsService.updateQuestion(parsedId, questionUpdate);
       
       // Redirect back to question details
       router.push(`/mcqs/questions/${questionId}`);
@@ -138,7 +145,7 @@ export default function EditQuestionPage({ params }: { params: { questionId: str
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
         <Button asChild variant="ghost" className="mr-4">
-          <Link href={`/mcqs/questions/${params.questionId}`}>
+          <Link href={`/mcqs/questions/${questionId}`}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Question
           </Link>
@@ -146,7 +153,7 @@ export default function EditQuestionPage({ params }: { params: { questionId: str
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Question</h1>
       </div>
 
-      {error && <ErrorAlert error={error} className="mb-6" />}
+      {error && <ErrorAlert error={error} />}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
         <form onSubmit={handleSubmit}>
