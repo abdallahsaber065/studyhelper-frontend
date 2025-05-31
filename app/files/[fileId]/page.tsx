@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import FileShareModal from '@/components/files/FileShareModal';
 import { filesService } from '@/services/files';
-import { PhysicalFile, FileAccessInfo } from '@/types/files';
+import { FileRead, UserFileAccessRead } from '@/types/files';
 import { 
   formatFileSize, 
   formatFileDate, 
@@ -38,24 +38,18 @@ export default function FileDetailsPage() {
   const { user, isLoading: authLoading } = useProtectedRoute();
   const fileId = params.fileId as string;
 
-  const [file, setFile] = useState<PhysicalFile | null>(null);
-  const [accessList, setAccessList] = useState<FileAccessInfo[]>([]);
+  const [file, setFile] = useState<FileRead | null>(null);
+  const [accessList, setAccessList] = useState<UserFileAccessRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (fileId) {
-      loadFileDetails();
-      loadAccessList();
-    }
-  }, [fileId]);
-
-  const loadFileDetails = async () => {
+  const loadFileDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const fileData = await filesService.getFileById(fileId);
+      const fileIdNum = Number(fileId);
+      const fileData = await filesService.getFileById(fileIdNum);
       setFile(fileData);
     } catch (error) {
       console.error('Failed to load file details:', error);
@@ -63,23 +57,31 @@ export default function FileDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fileId]);
 
-  const loadAccessList = async () => {
+  const loadAccessList = useCallback(async () => {
     try {
-      const access = await filesService.getFileAccess(fileId);
+      const fileIdNum = Number(fileId);
+      const access = await filesService.getFileAccess(fileIdNum);
       setAccessList(access);
     } catch (error) {
       console.error('Failed to load access list:', error);
       // Don't set error here as it might be a permission issue
     }
-  };
+  }, [fileId]);
+
+  useEffect(() => {
+    if (fileId) {
+      loadFileDetails();
+      loadAccessList();
+    }
+  }, [fileId, loadFileDetails, loadAccessList]);
 
   const handleDelete = async () => {
     if (!file) return;
     
     // TODO: Implement delete confirmation modal
-    const confirmed = window.confirm(`Are you sure you want to delete "${file.original_filename}"? This action cannot be undone.`);
+    const confirmed = window.confirm(`Are you sure you want to delete "${file.file_name}"? This action cannot be undone.`);
     
     if (confirmed) {
       try {
@@ -135,7 +137,7 @@ export default function FileDetailsPage() {
     return null;
   }
 
-  const isOwner = file.uploader_id === user.id;
+  const isOwner = file.user_id === parseInt(user.id);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -153,10 +155,10 @@ export default function FileDetailsPage() {
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
               <div className="flex items-center space-x-2">
                 <span className="text-2xl">
-                  {getFileTypeIcon(file.content_type)}
+                  {getFileTypeIcon(file.file_type)}
                 </span>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white truncate max-w-md">
-                  {file.original_filename}
+                  {file.file_name}
                 </h1>
               </div>
             </div>
@@ -166,7 +168,7 @@ export default function FileDetailsPage() {
                 Share
               </Button>
               {isOwner && (
-                <Button variant="outline" disabled className="text-red-400 cursor-not-allowed" title="File deletion is not supported by the backend API">
+                <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-700">
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete
                 </Button>
@@ -205,13 +207,13 @@ export default function FileDetailsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {getFileTypeName(file.content_type)}
+                        {getFileTypeName(file.file_type)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Size:</span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatFileSize(file.size_bytes)}
+                        {formatFileSize(file.file_size_bytes)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -234,10 +236,7 @@ export default function FileDetailsPage() {
                         Uploaded by:
                       </span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {file.uploader ? 
-                          `${file.uploader.first_name} ${file.uploader.last_name}` : 
-                          'Unknown'
-                        }
+                        {file.user_id}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -246,7 +245,7 @@ export default function FileDetailsPage() {
                         Uploaded:
                       </span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatFileDate(file.upload_timestamp)}
+                        {formatFileDate(file.uploaded_at)}
                       </span>
                     </div>
                   </div>
@@ -332,10 +331,7 @@ export default function FileDetailsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {access.user ? 
-                            `${access.user.first_name} ${access.user.last_name}` : 
-                            `User ${access.user_id}`
-                          }
+                          {access.user_id}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                           {access.access_level} access

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import FileList from '@/components/files/FileList';
 import FileShareModal from '@/components/files/FileShareModal';
-import { PhysicalFile } from '@/types/files';
+import { FileRead } from '@/types/files';
 import { 
   ArrowLeft, 
   Upload, 
@@ -22,33 +22,21 @@ import {
 export default function FilesPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useProtectedRoute();
-  const [shareModalFile, setShareModalFile] = useState<PhysicalFile | null>(null);
+  const [shareModalFile, setShareModalFile] = useState<FileRead | null>(null);
   const [error, setError] = useState<any>(null);
-  const [totalFiles, setTotalFiles] = useState(0);
-  const [sharedFiles, setSharedFiles] = useState(0);
-  const [storageUsed, setStorageUsed] = useState(0);
 
-  const handleFileSelect = (file: PhysicalFile) => {
+  const handleFileSelect = (file: FileRead) => {
     router.push(`/files/${file.id}`);
   };
 
-  const handleFileShare = (file: PhysicalFile) => {
+  const handleFileShare = (file: FileRead) => {
     setShareModalFile(file);
   };
 
-  const handleFileDelete = (file: PhysicalFile) => {
+  const handleFileDelete = (file: FileRead) => {
     // TODO: Implement delete confirmation modal
     console.log('Delete file:', file.id);
   };
-
-  // Callback to update stats from FileList
-  const handleFilesLoaded = useCallback((files: PhysicalFile[]) => {
-    setTotalFiles(files.length);
-    setStorageUsed(files.reduce((sum, f) => sum + f.size_bytes, 0));
-    // Shared files: files with more than one user in access list (not perfect, but best effort)
-    // This requires fetching access lists for each file, which is expensive, so for now, set to 0 or leave as TODO
-    setSharedFiles(0); // TODO: Implement if needed
-  }, []);
 
   if (authLoading) {
     return (
@@ -128,7 +116,7 @@ export default function FilesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Files</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalFiles}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
                 </div>
                 <FileText className="w-8 h-8 text-blue-500" />
               </div>
@@ -137,7 +125,7 @@ export default function FilesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Shared Files</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{sharedFiles}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
                 </div>
                 <Users className="w-8 h-8 text-green-500" />
               </div>
@@ -146,7 +134,7 @@ export default function FilesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Storage Used</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{(storageUsed / (1024 * 1024)).toFixed(2)} MB</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
                 </div>
                 <Folder className="w-8 h-8 text-purple-500" />
               </div>
@@ -173,7 +161,6 @@ export default function FilesPage() {
             onFileShare={handleFileShare}
             onFileDelete={handleFileDelete}
             selectable={false}
-            onFilesLoaded={handleFilesLoaded}
           />
         </div>
       </div>

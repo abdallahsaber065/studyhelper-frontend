@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { filesService } from '@/services/files';
-import { PhysicalFile, FileAccessInfo, FileShareRequest } from '@/types/files';
+import { FileRead, UserFileAccessRead, FileShareRequest } from '@/types/files';
 import { formatFileDate } from '@/lib/file-utils';
 import { 
   X, 
@@ -23,7 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface FileShareModalProps {
-  file: PhysicalFile;
+  file: FileRead;
   isOpen: boolean;
   onClose: () => void;
   onShareSuccess?: () => void;
@@ -35,7 +35,7 @@ export default function FileShareModal({
   onClose,
   onShareSuccess
 }: FileShareModalProps) {
-  const [accessList, setAccessList] = useState<FileAccessInfo[]>([]);
+  const [accessList, setAccessList] = useState<UserFileAccessRead[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const [success, setSuccess] = useState('');
@@ -142,7 +142,7 @@ export default function FileShareModal({
                 Share File
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {file.original_filename}
+                {file.file_name}
               </p>
             </div>
           </div>

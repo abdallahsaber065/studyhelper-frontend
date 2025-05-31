@@ -1,11 +1,10 @@
 import apiClient from '@/lib/api-client';
-import { 
-  PhysicalFile, 
-  FileUploadResponse, 
-  FilesListResponse, 
+import {
+  FileRead,
+  FileUploadResponse,
   FileListParams,
   FileShareRequest,
-  FileAccessInfo 
+  UserFileAccessRead
 } from '@/types/files';
 
 export const filesService = {
@@ -13,7 +12,7 @@ export const filesService = {
   uploadFile: async (file: File): Promise<FileUploadResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await apiClient.post('/files/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -23,45 +22,38 @@ export const filesService = {
   },
 
   // Get user files
-  getFiles: async (params?: FileListParams): Promise<FilesListResponse> => {
+  getFiles: async (params?: FileListParams): Promise<FileRead[]> => {
     const queryParams = new URLSearchParams();
-    
-    if (params?.skip) queryParams.append('skip', params.skip.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
-    if (params?.content_type) queryParams.append('content_type', params.content_type);
-
     const response = await apiClient.get(`/files/?${queryParams.toString()}`);
     return response.data;
   },
 
   // Get file by ID
-  getFileById: async (fileId: string): Promise<PhysicalFile> => {
+  getFileById: async (fileId: number): Promise<FileRead> => {
     const response = await apiClient.get(`/files/${fileId}`);
     return response.data;
   },
 
   // Share file with user
-  shareFile: async (fileId: string, shareData: FileShareRequest): Promise<void> => {
-    const formData = new URLSearchParams();
-    formData.append('user_id', shareData.user_id);
-    formData.append('access_level', shareData.access_level);
-
-    await apiClient.post(`/files/${fileId}/share`, formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+  shareFile: async (fileId: number, shareData: FileShareRequest): Promise<UserFileAccessRead> => {
+    // user_id is required, access_level is optional
+    const payload: any = { user_id: shareData.user_id };
+    if (shareData.access_level) payload.access_level = shareData.access_level;
+    const response = await apiClient.post(`/files/${fileId}/share`, payload);
+    return response.data;
   },
 
   // Get file access list
-  getFileAccess: async (fileId: string): Promise<FileAccessInfo[]> => {
+  getFileAccess: async (fileId: number): Promise<UserFileAccessRead[]> => {
     const response = await apiClient.get(`/files/${fileId}/access`);
     return response.data;
   },
 
   // Revoke file access
-  revokeFileAccess: async (fileId: string, userId: string): Promise<void> => {
+  revokeFileAccess: async (fileId: number, userId: number): Promise<void> => {
     await apiClient.delete(`/files/${fileId}/share/${userId}`);
   },
 }; 

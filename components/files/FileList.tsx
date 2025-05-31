@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { filesService } from '@/services/files';
-import { PhysicalFile, FileListParams } from '@/types/files';
+import { FileRead, FileListParams } from '@/types/files';
 import { 
   formatFileSize, 
   formatFileDate, 
@@ -32,12 +32,11 @@ import {
 import { cn } from '@/lib/utils';
 
 interface FileListProps {
-  onFileSelect?: (file: PhysicalFile) => void;
-  onFileShare?: (file: PhysicalFile) => void;
-  onFileDelete?: (file: PhysicalFile) => void;
+  onFileSelect?: (file: FileRead) => void;
+  onFileShare?: (file: FileRead) => void;
+  onFileDelete?: (file: FileRead) => void;
   selectable?: boolean;
   className?: string;
-  onFilesLoaded?: (files: PhysicalFile[]) => void;
 }
 
 type SortField = 'name' | 'size' | 'type' | 'date';
@@ -48,10 +47,9 @@ export default function FileList({
   onFileShare,
   onFileDelete,
   selectable = false,
-  className,
-  onFilesLoaded,
+  className
 }: FileListProps) {
-  const [files, setFiles] = useState<PhysicalFile[]>([]);
+  const [files, setFiles] = useState<FileRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,21 +77,21 @@ export default function FileList({
       const response = await filesService.getFiles(params);
       
       // Sort files locally since API might not support all sort options
-      const sortedFiles = [...response.files].sort((a, b) => {
+      const sortedFiles = [...response].sort((a, b) => {
         let compareValue = 0;
         
         switch (sortField) {
           case 'name':
-            compareValue = a.original_filename.localeCompare(b.original_filename);
+            compareValue = a.file_name.localeCompare(b.file_name);
             break;
           case 'size':
-            compareValue = a.size_bytes - b.size_bytes;
+            compareValue = a.file_size_bytes - b.file_size_bytes;
             break;
           case 'type':
-            compareValue = a.content_type.localeCompare(b.content_type);
+            compareValue = a.file_type.localeCompare(b.file_type);
             break;
           case 'date':
-            compareValue = new Date(a.upload_timestamp).getTime() - new Date(b.upload_timestamp).getTime();
+            compareValue = new Date(a.uploaded_at).getTime() - new Date(b.uploaded_at).getTime();
             break;
           default:
             compareValue = 0;
@@ -103,8 +101,8 @@ export default function FileList({
       });
 
       setFiles(sortedFiles);
-      setTotalFiles(response.total);
-      setTotalPages(Math.ceil(response.total / itemsPerPage));
+      setTotalFiles(sortedFiles.length);
+      setTotalPages(Math.ceil(sortedFiles.length / itemsPerPage));
     } catch (error) {
       console.error('Failed to load files:', error);
       setError(error);
@@ -122,13 +120,6 @@ export default function FileList({
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Call onFilesLoaded when files change
-  useEffect(() => {
-    if (onFilesLoaded) {
-      onFilesLoaded(files);
-    }
-  }, [files, onFilesLoaded]);
-
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -138,22 +129,22 @@ export default function FileList({
     }
   };
 
-  const handleFileSelect = (file: PhysicalFile) => {
+  const handleFileSelect = (file: FileRead) => {
     if (selectable) {
       const newSelected = new Set(selectedFiles);
-      if (newSelected.has(file.id)) {
-        newSelected.delete(file.id);
+      const fileIdStr = String(file.id);
+      if (newSelected.has(fileIdStr)) {
+        newSelected.delete(fileIdStr);
       } else {
-        newSelected.add(file.id);
+        newSelected.add(fileIdStr);
       }
       setSelectedFiles(newSelected);
     }
     onFileSelect?.(file);
   };
 
-  const handleFileAction = (action: string, file: PhysicalFile) => {
+  const handleFileAction = (action: string, file: FileRead) => {
     setActionMenuFile(null);
-    
     switch (action) {
       case 'share':
         onFileShare?.(file);
@@ -280,18 +271,18 @@ export default function FileList({
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {files.map((file) => (
                 <div
-                  key={file.id}
+                  key={String(file.id)}
                   className={cn(
                     'p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors',
                     'grid grid-cols-1 lg:grid-cols-12 gap-4 items-center',
-                    selectable && selectedFiles.has(file.id) && 'bg-blue-50 dark:bg-blue-900/20'
+                    selectable && selectedFiles.has(String(file.id)) && 'bg-blue-50 dark:bg-blue-900/20'
                   )}
                 >
                   {selectable && (
                     <div className="lg:col-span-1">
                       <input
                         type="checkbox"
-                        checked={selectedFiles.has(file.id)}
+                        checked={selectedFiles.has(String(file.id))}
                         onChange={() => handleFileSelect(file)}
                         className="rounded border-gray-300 text-primary focus:ring-primary"
                       />
@@ -300,37 +291,31 @@ export default function FileList({
 
                   <div className={cn("lg:col-span-4 flex items-center space-x-3", selectable ? "lg:col-span-3" : "lg:col-span-4")}>
                     <span className="text-2xl flex-shrink-0">
-                      {getFileTypeIcon(file.content_type)}
+                      {getFileTypeIcon(file.file_type)}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {file.original_filename}
+                        {file.file_name}
                       </p>
-                      {file.uploader && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
-                          <User className="w-3 h-3 mr-1" />
-                          {file.uploader.first_name} {file.uploader.last_name}
-                        </p>
-                      )}
                     </div>
                   </div>
 
                   <div className="lg:col-span-2">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {getFileTypeName(file.content_type)}
+                      {getFileTypeName(file.file_type)}
                     </span>
                   </div>
 
                   <div className="lg:col-span-2">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {formatFileSize(file.size_bytes)}
+                      {formatFileSize(file.file_size_bytes)}
                     </span>
                   </div>
 
                   <div className="lg:col-span-2">
                     <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                       <Calendar className="w-3 h-3 mr-1" />
-                      {formatFileDate(file.upload_timestamp)}
+                      {formatFileDate(file.uploaded_at)}
                     </span>
                   </div>
 
@@ -338,13 +323,13 @@ export default function FileList({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setActionMenuFile(actionMenuFile === file.id ? null : file.id)}
+                      onClick={() => setActionMenuFile(String(file.id) === actionMenuFile ? null : String(file.id))}
                       className="w-8 h-8 p-0"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </Button>
 
-                    {actionMenuFile === file.id && (
+                    {actionMenuFile === String(file.id) && (
                       <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                         <div className="py-1">
                           <button

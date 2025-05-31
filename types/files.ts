@@ -1,71 +1,44 @@
-// File Types
-export interface PhysicalFile {
-  id: string;
-  filename: string;
-  original_filename: string;
-  size_bytes: number;
-  content_type: string;
-  file_hash: string;
-  upload_timestamp: string;
-  uploader_id: string;
-  uploader?: {
-    id: string;
-    username: string;
-    first_name: string;
-    last_name: string;
-  };
-}
+// File Types (Synced with backend OpenAPI)
 
-export interface FileUploadRequest {
-  file: File;
-  description?: string;
+export interface FileRead {
+  id: number;
+  file_name: string; // original file name
+  file_type: string; // extension (e.g., pdf, txt)
+  mime_type: string;
+  file_hash: string;
+  file_size_bytes: number;
+  uploaded_at: string; // ISO date-time
+  user_id: number;
 }
 
 export interface FileUploadResponse {
-  id: string;
-  filename: string;
-  original_filename: string;
-  size_bytes: number;
-  content_type: string;
   message: string;
-}
-
-export interface FileShareRequest {
-  user_id: string;
-  access_level: 'read' | 'write';
-}
-
-export interface FileAccessInfo {
-  user_id: string;
-  access_level: 'read' | 'write';
-  granted_at: string;
-  granted_by: string;
-  user?: {
-    id: string;
-    username: string;
-    first_name: string;
-    last_name: string;
-  };
-}
-
-export interface FilesListResponse {
-  files: PhysicalFile[];
-  total: number;
-  page: number;
-  limit: number;
+  file: FileRead;
 }
 
 export interface FileListParams {
   skip?: number;
   limit?: number;
   search?: string;
-  content_type?: string;
+}
+
+export interface UserFileAccessRead {
+  user_id: number;
+  physical_file_id: number;
+  access_level: 'read' | 'write' | 'admin';
+  granted_at: string;
+  granted_by_user_id?: number | null;
+}
+
+export interface FileShareRequest {
+  user_id: number;
+  access_level?: 'read' | 'write' | 'admin';
 }
 
 // File validation constants
 export const ALLOWED_FILE_TYPES = [
   'application/pdf',
-  'text/plain', 
+  'text/plain',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
   'application/msword', // .doc
 ] as const;
@@ -73,7 +46,7 @@ export const ALLOWED_FILE_TYPES = [
 export const ALLOWED_FILE_EXTENSIONS = [
   '.pdf',
   '.txt',
-  '.docx', 
+  '.docx',
   '.doc',
 ] as const;
 
