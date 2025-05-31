@@ -70,7 +70,7 @@ export interface QuizSessionRead {
 
 export interface QuizSessionAnswer {
   question_id: number;
-  answer: CorrectAnswerEnum;
+  selected_option: CorrectAnswerEnum;
 }
 
 export interface QuizSessionSubmit {

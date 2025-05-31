@@ -26,7 +26,10 @@ import {
   Share2,
   Zap,
   Activity,
-  LogOut
+  LogOut,
+  HelpCircle,
+  Tag,
+  History
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/userStore';
@@ -88,8 +91,31 @@ export default function DashboardPage() {
       icon: <ListChecks className="w-8 h-8 text-amber-500" />,
       href: '/mcqs/quizzes',
       color: 'amber',
-      gradient: 'from-amber-500 to-amber-600',
-      comingSoon: true
+      gradient: 'from-amber-500 to-amber-600'
+    },
+    {
+      title: 'MCQ Questions',
+      description: 'Manage your multiple-choice questions',
+      icon: <HelpCircle className="w-8 h-8 text-green-500" />,
+      href: '/mcqs/questions',
+      color: 'green',
+      gradient: 'from-green-500 to-green-600'
+    },
+    {
+      title: 'Question Tags',
+      description: 'Organize your questions with tags',
+      icon: <Tag className="w-8 h-8 text-pink-500" />,
+      href: '/mcqs/tags',
+      color: 'pink',
+      gradient: 'from-pink-500 to-pink-600'
+    },
+    {
+      title: 'Quiz History',
+      description: 'View your past quiz attempts and results',
+      icon: <History className="w-8 h-8 text-blue-500" />,
+      href: '/mcqs/sessions',
+      color: 'blue',
+      gradient: 'from-blue-500 to-blue-600'
     },
     {
       title: 'Communities',
@@ -104,9 +130,10 @@ export default function DashboardPage() {
 
   // Recent activity mock data
   const recentActivity = [
-    { type: 'upload', title: 'Uploaded a new file', time: '2 hours ago' },
-    { type: 'summary', title: 'Generated a summary', time: '5 hours ago' },
-    { type: 'mcq', title: 'Created MCQ questions', time: '1 day ago' },
+    { type: 'upload', title: 'Uploaded a new file', time: '2 hours ago', href: '/files' },
+    { type: 'summary', title: 'Generated a summary', time: '5 hours ago', href: '/summaries' },
+    { type: 'mcq', title: 'Created MCQ questions', time: '1 day ago', href: '/mcqs/questions' },
+    { type: 'quiz', title: 'Completed a quiz', time: '2 days ago', href: '/mcqs/sessions' },
   ];
   
   // Mock notifications data
@@ -401,16 +428,16 @@ export default function DashboardPage() {
             </h2>
             
             {/* Feature Cards - Grid with color highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {featureCards.slice(0, 4).map((feature, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featureCards.slice(0, 6).map((feature, index) => (
                 <div
                   key={index}
                   className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 ${feature.comingSoon ? 'opacity-70' : ''}`}
                 >
                   <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${feature.gradient}`}></div>
                   <div className="p-6">
-                    <div className="flex items-start">
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20 mb-4`}>
+                    <div className="flex items-start mb-4">
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20`}>
                         {feature.icon}
                       </div>
                       <div className="ml-4 flex-1">
@@ -422,7 +449,7 @@ export default function DashboardPage() {
                             </span>
                           )}
                         </h3>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        <p className="text-gray-600 dark:text-gray-400">
                           {feature.description}
                         </p>
                       </div>
@@ -434,7 +461,7 @@ export default function DashboardPage() {
                       className="w-full mt-2"
                     >
                       <Link href={feature.comingSoon ? "#" : feature.href} className="flex items-center justify-center">
-                        {feature.comingSoon ? 'Coming Soon' : 'Get Started'}
+                        <span>Get Started</span>
                         {!feature.comingSoon && <ArrowRight className="w-4 h-4 ml-2" />}
                       </Link>
                     </Button>
@@ -500,25 +527,28 @@ export default function DashboardPage() {
                   <div key={index} className="flex items-start border-b border-gray-100 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center 
                       ${activity.type === 'upload' ? 'bg-blue-100 dark:bg-blue-900/20' : 
-                        activity.type === 'summary' ? 'bg-purple-100 dark:bg-purple-900/20' : 
+                        activity.type === 'summary' ? 'bg-purple-100 dark:bg-purple-900/20' :
+                        activity.type === 'quiz' ? 'bg-amber-100 dark:bg-amber-900/20' : 
                         'bg-teal-100 dark:bg-teal-900/20'}`}>
                       {activity.type === 'upload' ? 
                         <FileText className="w-4 h-4 text-blue-600" /> : 
                         activity.type === 'summary' ? 
-                        <Brain className="w-4 h-4 text-purple-600" /> : 
+                        <Brain className="w-4 h-4 text-purple-600" /> :
+                        activity.type === 'quiz' ?
+                        <ListChecks className="w-4 h-4 text-amber-600" /> : 
                         <MessageSquare className="w-4 h-4 text-teal-600" />}
                     </div>
                     <div className="ml-3 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.title}</p>
+                      <Link href={activity.href} className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">{activity.title}</Link>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Coming soon features</h3>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">More Features</h3>
                 <div className="space-y-2">
-                  {featureCards.slice(4).map((feature, index) => (
+                  {featureCards.slice(6).map((feature, index) => (
                     <div key={index} className="flex items-center py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20`}>
                         {feature.icon}
@@ -527,7 +557,16 @@ export default function DashboardPage() {
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{feature.title}</p>
                       </div>
                       <div className="ml-auto">
-                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Soon</span>
+                        {feature.comingSoon ? (
+                          <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Soon</span>
+                        ) : (
+                          <Button asChild variant="ghost" size="sm" className="text-xs text-blue-600 dark:text-blue-400 h-8">
+                            <Link href={feature.href}>
+                              <span>View</span>
+                              <ArrowRight className="w-3 h-3 ml-1" />
+                            </Link>
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

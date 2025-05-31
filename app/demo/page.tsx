@@ -85,13 +85,18 @@ const phases: Phase[] = [
     id: 4,
     title: "MCQs, Quizzes, and Sessions",
     description: "Create and manage quizzes, track sessions.",
-    status: "coming-soon",
+    status: "completed",
     features: [
       'MCQ question creation and editing',
       'Quiz builder with question selection',
       'Interactive quiz taking interface',
       'Session management and scoring',
       'Performance analytics'
+    ],
+    links: [
+      { label: "Questions", href: "/mcqs/questions" },
+      { label: "Question Tags", href: "/mcqs/tags" },
+      { label: "Quizzes", href: "/mcqs/quizzes" },
     ],
   },
   {
@@ -393,6 +398,24 @@ export default function DemoPage() {
               <Link href="/files">
                 <FileText className="w-4 h-4 mr-2" />
                 Manage Files
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/summaries/generate">
+                <FileText className="w-4 h-4 mr-2" />
+                Generate Summary
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/mcqs/generate">
+                <FileText className="w-4 h-4 mr-2" />
+                Generate MCQs
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/mcqs/quizzes">
+                <FileText className="w-4 h-4 mr-2" />
+                Manage Quizzes
               </Link>
             </Button>
           </div>
