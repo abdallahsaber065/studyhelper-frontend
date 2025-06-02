@@ -24,7 +24,7 @@ export function useAuth(redirectTo?: string) {
     try {
       // Initialize auth state from Zustand store
       initializeAuth();
-      
+
       // Double-check localStorage in case Zustand's state is stale
       if (typeof window !== 'undefined') {
         const authStorage = localStorage.getItem('auth-storage');
@@ -51,7 +51,7 @@ export function useAuth(redirectTo?: string) {
   const storeAuthData = useCallback((user: any, token: string) => {
     // Update Zustand store
     setAuth(user, token);
-    
+
     // Also update localStorage directly
     try {
       const authData = {
@@ -72,14 +72,14 @@ export function useAuth(redirectTo?: string) {
     try {
       setLoading(true);
       const response = await authService.login(credentials);
-      
+
       // Store auth data
       storeAuthData(response.user, response.access_token);
-      
-      return { 
-        success: true, 
-        user: response.user, 
-        access_token: response.access_token 
+
+      return {
+        success: true,
+        user: response.user,
+        access_token: response.access_token
       };
     } catch (error: any) {
       console.error('Login error:', error);
@@ -95,7 +95,7 @@ export function useAuth(redirectTo?: string) {
     try {
       setLoading(true);
       const response = await authService.register(userData);
-      storeAuthData(response.user, response.access_token);
+      // Remove auto-login functionality
       return { success: true, user: response.user };
     } catch (error: any) {
       console.error('Registration error:', error);

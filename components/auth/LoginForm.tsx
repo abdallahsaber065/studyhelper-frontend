@@ -1,25 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ErrorAlert } from '@/components/ui/error-alert';
+import { ActivationBanner } from '@/components/ui/activation-banner';
 import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<any>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showActivationBanner, setShowActivationBanner] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
-  
+
   // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -27,9 +32,20 @@ export default function LoginForm() {
     }
   }, [isAuthenticated, router]);
 
+  // Check for registration success parameter
+  useEffect(() => {
+    const registration = searchParams.get('registration');
+    const email = searchParams.get('email');
+
+    if (registration === 'success' && email) {
+      setSuccessMessage(`Registration successful! Please check your email (${email}) to activate your account before logging in.`);
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setShowActivationBanner(false);
 
     if (!formData.username || !formData.password) {
       setError({ message: 'Please fill in all fields' });
@@ -38,21 +54,28 @@ export default function LoginForm() {
 
     try {
       const result = await login(formData);
-      
+
       if (result.success) {
+        // Check if user account is activated
+        if (result.user && !result.user.is_active) {
+          setShowActivationBanner(true);
+          setUserEmail(result.user.email);
+          return; // Don't redirect if account not activated
+        }
+
         // Explicitly redirect to dashboard
         router.push('/dashboard');
       } else {
-        // This branch shouldn't execute since login() throws on error
-        setError({ message: result.error });
+        // This shouldn't happen as login() throws errors rather than returning them
+        setError({ message: 'Authentication failed' });
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       // Extract error from API response
       if (error.response?.data?.error) {
         // New API format
-        setError({ 
+        setError({
           message: error.response.data.error.message,
           type: error.response.data.error.type,
           status: error.response.data.error.status_code
@@ -75,11 +98,21 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <ErrorAlert 
-          error={error} 
-          dismissible 
+        <ErrorAlert
+          error={error}
+          dismissible
           onDismiss={() => setError(null)}
         />
+      )}
+
+      {successMessage && (
+        <div className="bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 p-4 rounded-md mb-6">
+          {successMessage}
+        </div>
+      )}
+
+      {showActivationBanner && (
+        <ActivationBanner email={userEmail || undefined} />
       )}
 
       <div className="space-y-2">
@@ -141,8 +174,8 @@ export default function LoginForm() {
       <div className="text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Don't have an account?{' '}
-          <Link 
-            href="/auth/register" 
+          <Link
+            href="/auth/register"
             className="text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium"
           >
             Create one here
@@ -151,8 +184,8 @@ export default function LoginForm() {
       </div>
 
       <div className="text-center">
-        <Link 
-          href="/auth/forgot-password" 
+        <Link
+          href="/auth/forgot-password"
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
         >
           Forgot Password?

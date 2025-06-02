@@ -46,8 +46,8 @@ export default function RegisterForm() {
     setError(null);
 
     // Validation
-    if (!formData.username || !formData.email || !formData.first_name || 
-        !formData.last_name || !formData.password || !formData.confirmPassword) {
+    if (!formData.username || !formData.email || !formData.first_name ||
+      !formData.last_name || !formData.password || !formData.confirmPassword) {
       setError({ message: 'Please fill in all fields' });
       return;
     }
@@ -76,7 +76,7 @@ export default function RegisterForm() {
     // Submit registration
     const { confirmPassword, ...registrationData } = formData;
     const result = await register(registrationData);
-    
+
     if (result.success) {
       setSuccess(
         `Registration successful! Please check your email (${registrationData.email}) to activate your account.`
@@ -89,7 +89,8 @@ export default function RegisterForm() {
         first_name: '',
         last_name: '',
       });
-      router.push('/dashboard');
+      // Redirect to login page with success message
+      router.push(`/auth/login?registration=success&email=${encodeURIComponent(registrationData.email)}`);
     } else {
       setError(result.rawError || { message: result.error });
     }
@@ -103,9 +104,9 @@ export default function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <ErrorAlert 
-          error={error} 
-          dismissible 
+        <ErrorAlert
+          error={error}
+          dismissible
           onDismiss={() => setError(null)}
         />
       )}
@@ -205,7 +206,7 @@ export default function RegisterForm() {
             )}
           </Button>
         </div>
-        
+
         {formData.password && (
           <div className="mt-2 space-y-1">
             {passwordRequirements.map((req, index) => (
@@ -284,8 +285,8 @@ export default function RegisterForm() {
       <div className="text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
-          <Link 
-            href="/auth/login" 
+          <Link
+            href="/auth/login"
             className="text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 font-medium"
           >
             Sign in here
