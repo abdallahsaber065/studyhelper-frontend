@@ -186,7 +186,7 @@ export default function TagsManagementPage() {
         </Button>
       </div>
 
-      {error && <ErrorAlert error={error} className="mb-6" />}
+      {error && <ErrorAlert error={error} />}
 
       {/* New Tag Form */}
       {isAddingTag && (

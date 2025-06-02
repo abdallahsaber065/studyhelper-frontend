@@ -19,22 +19,24 @@ import {
   X,
   ListChecks,
   BookOpen,
-  Edit
+  Edit,
+  Plus,
+  Home
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface FormData {
   title: string;
@@ -48,7 +50,7 @@ interface FormData {
 export default function EditQuizPage({ params }: { params: Promise<{ quizId: string }> }) {
   const router = useRouter();
   const { user } = useProtectedRoute();
-  
+
   const [quiz, setQuiz] = useState<McqQuizRead | null>(null);
   const [questions, setQuestions] = useState<McqQuestionRead[]>([]);
   const [availableQuestions, setAvailableQuestions] = useState<McqQuestionRead[]>([]);
@@ -57,43 +59,43 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
   const [error, setError] = useState<any>(null);
   const { quizId } = use(params);
   const parsedQuizId = parseInt(quizId, 10);
-  
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>();
   const selectedQuestionIds = watch('question_ids', []);
-  
+
   // Load quiz and questions
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         if (isNaN(parsedQuizId)) {
           throw new Error("Invalid quiz ID");
         }
-        
+
         // Fetch the quiz data
         const quizData = await mcqsService.getQuizById(parsedQuizId);
         setQuiz(quizData);
-        
+
         // Populate form fields
         setValue('title', quizData.title);
         setValue('description', quizData.description || '');
         setValue('difficulty_level', quizData.difficulty_level);
         setValue('is_active', quizData.is_active);
         setValue('is_public', quizData.is_public);
-        
+
         // Fetch all questions for selection
         const allQuestions = await mcqsService.getQuestions();
         setAvailableQuestions(allQuestions);
-        
+
         // Fetch the quiz details to get the questions
         const quizWithQuestions = await mcqsService.getQuizById(parsedQuizId);
         if ('questions' in quizWithQuestions) {
-          setQuestions(quizWithQuestions.questions);
-          
+          setQuestions(quizWithQuestions.questions as McqQuestionRead[]);
+
           // Set selected question IDs
-          const questionIds = quizWithQuestions.questions.map(q => q.id);
+          const questionIds = (quizWithQuestions.questions as McqQuestionRead[]).map(q => q.id);
           setValue('question_ids', questionIds);
         }
       } catch (err) {
@@ -103,17 +105,28 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [parsedQuizId, setValue]);
-  
+
   // Handle form submission
   const onSubmit = async (data: FormData) => {
     if (!quiz) return;
-    
+
+    // Validate that at least one question is selected
+    if (!data.question_ids || data.question_ids.length === 0) {
+      setError({
+        message: "Please select at least one question for your quiz."
+      });
+      // Auto-switch to the questions tab if there's an error
+      const questionsTab = document.querySelector('[value="questions"]') as HTMLElement;
+      if (questionsTab) questionsTab.click();
+      return;
+    }
+
     try {
       setSaving(true);
-      
+
       // Update the quiz
       await mcqsService.updateQuiz(quiz.id, {
         title: data.title,
@@ -123,26 +136,26 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
         is_public: data.is_public,
         question_ids: data.question_ids
       });
-      
-      router.push(`/mcqs/quizzes/${quiz.id}`);
+
+      router.push(`/quizzes/${quiz.id}`);
     } catch (err) {
       console.error('Failed to update quiz:', err);
       setError(err);
       setSaving(false);
     }
   };
-  
+
   // Toggle a question in the selection
   const toggleQuestion = (questionId: number) => {
     const currentIds = [...(watch('question_ids') || [])];
-    
+
     if (currentIds.includes(questionId)) {
       setValue('question_ids', currentIds.filter(id => id !== questionId));
     } else {
       setValue('question_ids', [...currentIds, questionId]);
     }
   };
-  
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -152,7 +165,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
       </div>
     );
   }
-  
+
   if (!quiz || !user) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -162,13 +175,13 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
             The quiz you're looking for doesn't exist or you don't have permission to edit it.
           </p>
           <Button asChild>
-            <Link href="/mcqs/quizzes">Back to Quizzes</Link>
+            <Link href="/quizzes">Back to Quizzes</Link>
           </Button>
         </div>
       </div>
     );
   }
-  
+
   // Check if user has permission to edit
   if (quiz.user_id !== parseInt(user.id)) {
     return (
@@ -179,31 +192,31 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
             You don't have permission to edit this quiz.
           </p>
           <Button asChild>
-            <Link href={`/mcqs/quizzes/${quiz.id}`}>Back to Quiz</Link>
+            <Link href={`/quizzes/${quiz.id}`}>Back to Quiz</Link>
           </Button>
         </div>
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb navigation */}
       <Breadcrumb
         items={[
           {
-            label: 'MCQs',
-            href: '/mcqs/questions',
-            icon: <BookOpen className="w-4 h-4" />
+            label: 'Home',
+            href: '/dashboard',
+            icon: <Home className="w-4 h-4" />
           },
           {
             label: 'Quizzes',
-            href: '/mcqs/quizzes',
+            href: '/quizzes',
             icon: <ListChecks className="w-4 h-4" />
           },
           {
             label: quiz.title,
-            href: `/mcqs/quizzes/${quiz.id}`,
+            href: `/quizzes/${quiz.id}`,
             icon: <CheckSquare className="w-4 h-4" />
           },
           {
@@ -212,28 +225,28 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
           }
         ]}
       />
-      
+
       <div className="flex items-center mb-6">
         <Button asChild variant="outline" size="sm">
-          <Link href={`/mcqs/quizzes/${quiz.id}`}>
+          <Link href={`/quizzes/${quiz.id}`}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Quiz
           </Link>
         </Button>
       </div>
-      
-      {error && <ErrorAlert error={error} className="mb-6" />}
-      
+
+      {error && <ErrorAlert error={error} />}
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
         <h1 className="text-2xl font-bold mb-6">Edit Quiz</h1>
-        
+
         <form onSubmit={handleSubmit(onSubmit)}>
           <Tabs defaultValue="details" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="details">Quiz Details</TabsTrigger>
               <TabsTrigger value="questions">Questions</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="details" className="space-y-6">
               <div className="space-y-4">
                 <div>
@@ -248,7 +261,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
                     <p className="text-sm text-red-500 mt-1">{errors.title.message}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <Label htmlFor="description">Description</Label>
                   <Textarea
@@ -258,7 +271,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
                     rows={4}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="difficulty_level">Difficulty Level</Label>
                   <Select
@@ -275,37 +288,85 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="is_active"
                     checked={watch('is_active')}
-                    onCheckedChange={(checked) => setValue('is_active', checked)}
+                    onCheckedChange={(checked: boolean) => setValue('is_active', checked)}
                   />
                   <Label htmlFor="is_active">Active</Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="is_public"
                     checked={watch('is_public')}
-                    onCheckedChange={(checked) => setValue('is_public', checked)}
+                    onCheckedChange={(checked: boolean) => setValue('is_public', checked)}
                   />
                   <Label htmlFor="is_public">Public</Label>
                 </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="questions">
               <div className="space-y-4">
-                <h2 className="text-lg font-medium">Select Questions</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Selected: {selectedQuestionIds.length} questions
-                </p>
-                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-lg font-medium">Select Questions</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Selected: <span className={`font-semibold ${selectedQuestionIds.length === 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                        {selectedQuestionIds.length} questions
+                      </span>
+                      <span className="ml-1 text-xs text-red-500 dark:text-red-400">
+                        {selectedQuestionIds.length === 0 && '(At least one question is required)'}
+                      </span>
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  >
+                    <Link href="/quizzes/questions/new">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add New Question
+                    </Link>
+                  </Button>
+                </div>
+
+                {/* Filter options for questions */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-md border border-gray-200 dark:border-gray-700">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant={selectedQuestionIds.length > 0 ? "default" : "destructive"}
+                      size="sm"
+                      onClick={() => {
+                        if (availableQuestions.length > 0) {
+                          const allIds = availableQuestions.map(q => q.id);
+                          setValue('question_ids', allIds);
+                        }
+                      }}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setValue('question_ids', [])}
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="grid gap-4">
                   {availableQuestions.length === 0 ? (
-                    <p>No questions available. <Link href="/mcqs/questions/new" className="text-blue-600 dark:text-blue-400 hover:underline">Create some questions</Link> first.</p>
+                    <div className="border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800 rounded-md p-4 text-center">
+                      <p className="mb-2 text-yellow-800 dark:text-yellow-300">No questions available.</p>
+                      <p>You need to <Link href="/quizzes/questions/new" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">create some questions</Link> before you can add them to your quiz.</p>
+                    </div>
                   ) : (
                     availableQuestions.map(question => (
                       <Card key={question.id} className={`border ${selectedQuestionIds.includes(question.id) ? 'border-primary' : 'border-gray-200 dark:border-gray-700'}`}>
@@ -355,12 +416,12 @@ export default function EditQuizPage({ params }: { params: Promise<{ quizId: str
               </div>
             </TabsContent>
           </Tabs>
-          
+
           <div className="mt-8 flex justify-end space-x-4">
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push(`/mcqs/quizzes/${quiz.id}`)}
+              onClick={() => router.push(`/quizzes/${quiz.id}`)}
               disabled={saving}
             >
               <X className="w-4 h-4 mr-2" />

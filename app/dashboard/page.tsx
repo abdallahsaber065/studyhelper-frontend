@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/userStore';
+import React from 'react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -56,52 +57,46 @@ export default function DashboardPage() {
   // Feature cards for the dashboard
   const featureCards = [
     {
+      title: 'My Quizzes',
+      description: 'Create and practice with quizzes to test your knowledge',
+      icon: <ListChecks className="w-8 h-8 text-amber-500" />,
+      href: '/quizzes',
+      color: 'amber',
+      gradient: 'from-amber-500 to-amber-600',
+      priority: true
+    },
+    {
+      title: 'My Summaries',
+      description: 'View and manage your AI-generated study summaries',
+      icon: <FileText className="w-8 h-8 text-indigo-500" />,
+      href: '/summaries',
+      color: 'indigo',
+      gradient: 'from-indigo-500 to-indigo-600',
+      priority: true
+    },
+    {
       title: 'My Files',
-      description: 'Manage your uploaded files and documents',
+      description: 'Upload and organize your study materials',
       icon: <FolderOpen className="w-8 h-8 text-blue-500" />,
       href: '/files',
       color: 'blue',
       gradient: 'from-blue-500 to-blue-600'
     },
     {
-      title: 'My Summaries',
-      description: 'View and manage your generated summaries',
-      icon: <FileText className="w-8 h-8 text-indigo-500" />,
-      href: '/summaries',
-      color: 'indigo',
-      gradient: 'from-indigo-500 to-indigo-600'
-    },
-    {
-      title: 'My Quizzes',
-      description: 'Practice with quizzes created from your materials',
-      icon: <ListChecks className="w-8 h-8 text-amber-500" />,
-      href: '/mcqs/quizzes',
-      color: 'amber',
-      gradient: 'from-amber-500 to-amber-600'
-    },
-    {
-      title: 'MCQ Questions',
-      description: 'Manage your multiple-choice questions',
-      icon: <HelpCircle className="w-8 h-8 text-green-500" />,
-      href: '/mcqs/questions',
-      color: 'green',
-      gradient: 'from-green-500 to-green-600'
-    },
-    {
-      title: 'Question Tags',
-      description: 'Organize your questions with tags',
-      icon: <Tag className="w-8 h-8 text-pink-500" />,
-      href: '/mcqs/tags',
-      color: 'pink',
-      gradient: 'from-pink-500 to-pink-600'
-    },
-    {
       title: 'Quiz History',
-      description: 'View your past quiz attempts and results',
+      description: 'Review your past quiz attempts and track progress',
       icon: <History className="w-8 h-8 text-blue-500" />,
-      href: '/mcqs/sessions',
+      href: '/quizzes/sessions',
       color: 'blue',
       gradient: 'from-blue-500 to-blue-600'
+    },
+    {
+      title: 'Question Bank',
+      description: 'Manage your library of multiple-choice questions',
+      icon: <HelpCircle className="w-8 h-8 text-green-500" />,
+      href: '/quizzes/questions',
+      color: 'green',
+      gradient: 'from-green-500 to-green-600'
     },
     {
       title: 'Communities',
@@ -114,12 +109,21 @@ export default function DashboardPage() {
     }
   ];
 
+  // Sort the feature cards to show priority items first
+  const sortedFeatureCards = [...featureCards].sort((a, b) => {
+    if (a.priority && !b.priority) return -1;
+    if (!a.priority && b.priority) return 1;
+    if (a.comingSoon && !b.comingSoon) return 1;
+    if (!a.comingSoon && b.comingSoon) return -1;
+    return 0;
+  });
+
   // Recent activity mock data
   const recentActivity = [
     { type: 'upload', title: 'Uploaded a new file', time: '2 hours ago', href: '/files' },
     { type: 'summary', title: 'Generated a summary', time: '5 hours ago', href: '/summaries' },
-    { type: 'mcq', title: 'Created MCQ questions', time: '1 day ago', href: '/mcqs/questions' },
-    { type: 'quiz', title: 'Completed a quiz', time: '2 days ago', href: '/mcqs/sessions' },
+    { type: 'mcq', title: 'Created MCQ questions', time: '1 day ago', href: '/quizzes/questions' },
+    { type: 'quiz', title: 'Completed a quiz', time: '2 days ago', href: '/quizzes/sessions' },
   ];
 
   // Mock notifications data
@@ -433,44 +437,124 @@ export default function DashboardPage() {
               </span>
             </h2>
 
-            {/* Feature Cards - Grid with color highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featureCards.slice(0, 6).map((feature, index) => (
+            {/* Feature Cards - Priority Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {sortedFeatureCards.filter(card => card.priority).map((feature, index) => (
                 <div
                   key={index}
-                  className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-64 ${feature.comingSoon ? 'opacity-70' : ''}`}
+                  className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-72"
                 >
-                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${feature.gradient}`}></div>
+                  <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${feature.gradient}`}></div>
                   <div className="p-6 flex flex-col h-full">
                     <div className="flex items-start mb-4">
                       <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20`}>
                         {feature.icon}
                       </div>
                       <div className="ml-4 flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                           {feature.title}
-                          {feature.comingSoon && (
-                            <span className="ml-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
-                              Coming Soon
-                            </span>
-                          )}
                         </h3>
-                        <p className="text-gray-600 dark:text-gray-400 line-clamp-2">
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">
                           {feature.description}
                         </p>
                       </div>
                     </div>
+
                     <div className="mt-auto">
                       <Button
                         asChild
-                        variant={feature.comingSoon ? "outline" : "default"}
-                        disabled={feature.comingSoon}
+                        size="lg"
                         className="w-full"
                       >
-                        <Link href={feature.comingSoon ? "#" : feature.href} className="flex items-center justify-center">
+                        <Link href={feature.href} className="flex items-center justify-center">
                           <span>Get Started</span>
-                          {!feature.comingSoon && <ArrowRight className="w-4 h-4 ml-2" />}
+                          <ArrowRight className="w-4 h-4 ml-2" />
                         </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Secondary Feature Cards */}
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Other Tools
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {sortedFeatureCards.filter(card => !card.priority && !card.comingSoon).map((feature, index) => (
+                <div
+                  key={index}
+                  className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col"
+                >
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${feature.gradient}`}></div>
+                  <div className="p-4 flex flex-col h-full">
+                    <div className="flex items-center mb-3">
+                      <div className={`w-8 h-8 rounded-md flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20`}>
+                        {React.cloneElement(feature.icon as React.ReactElement, { className: 'w-5 h-5' })}
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-md font-medium text-gray-900 dark:text-white">
+                          {feature.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                      {feature.description}
+                    </p>
+
+                    <div className="mt-auto">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Link href={feature.href} className="flex items-center justify-center">
+                          <span>View</span>
+                          <ArrowRight className="w-3 h-3 ml-1" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Coming Soon Card */}
+              {sortedFeatureCards.filter(card => card.comingSoon).map((feature, index) => (
+                <div
+                  key={index}
+                  className="relative overflow-hidden bg-white/80 dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col opacity-70"
+                >
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${feature.gradient}`}></div>
+                  <div className="p-4 flex flex-col h-full">
+                    <div className="flex items-center mb-3">
+                      <div className={`w-8 h-8 rounded-md flex items-center justify-center bg-${feature.color}-100 dark:bg-${feature.color}-900/20`}>
+                        {React.cloneElement(feature.icon as React.ReactElement, { className: 'w-5 h-5' })}
+                      </div>
+                      <div className="ml-3 flex items-center">
+                        <h3 className="text-md font-medium text-gray-900 dark:text-white">
+                          {feature.title}
+                        </h3>
+                        <span className="ml-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                          Coming Soon
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                      {feature.description}
+                    </p>
+
+                    <div className="mt-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full opacity-50 cursor-not-allowed"
+                        disabled
+                      >
+                        <span>Coming Soon</span>
                       </Button>
                     </div>
                   </div>

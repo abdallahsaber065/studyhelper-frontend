@@ -7,23 +7,23 @@ import { Button } from '@/components/ui/button';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import { mcqsService } from '@/services/mcqs';
-import { 
-  McqQuizWithQuestions, 
-  QuizSessionRead, 
-  McqQuestionRead 
+import {
+  McqQuizWithQuestions,
+  QuizSessionRead,
+  McqQuestionRead
 } from '@/types/mcqs';
-import { 
-  ArrowLeft, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  Check, 
-  Flag, 
-  Loader2, 
-  ListChecks, 
-  HelpCircle, 
-  CheckCircle, 
-  XCircle, 
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Check,
+  Flag,
+  Loader2,
+  ListChecks,
+  HelpCircle,
+  CheckCircle,
+  XCircle,
   Home,
   AlertCircle
 } from 'lucide-react';
@@ -34,14 +34,14 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
   const searchParams = useSearchParams();
   const { user } = useProtectedRoute();
   const { toast } = useToast();
-  
+
   // State for quiz data
   const [quiz, setQuiz] = useState<McqQuizWithQuestions | null>(null);
   const [session, setSession] = useState<QuizSessionRead | null>(null);
   const [questions, setQuestions] = useState<McqQuestionRead[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
-  
+
   // State for UI
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
@@ -50,13 +50,13 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
   const [showingResults, setShowingResults] = useState(false);
   const [startTime] = useState<Date>(new Date());
   const [elapsedTime, setElapsedTime] = useState<string>('00:00');
-  
+
   // Extract quizId from params and sessionId from search params
   const { quizId } = use(params);
   const parsedQuizId = parseInt(quizId, 10);
   const sessionParam = searchParams ? searchParams.get('session') : null;
   const sessionId = sessionParam ? parseInt(sessionParam, 10) : 0;
-  
+
   // Load quiz and session data
   useEffect(() => {
     const fetchQuizAndSession = async () => {
@@ -71,32 +71,66 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
           setLoading(false);
           return;
         }
-        
+
         // Set quiz and questions regardless of session
         setQuiz(quizData as McqQuizWithQuestions);
-        const questionsData = Array.isArray((quizData as any).questions) 
-          ? (quizData as any).questions 
+        const questionsData = Array.isArray((quizData as any).questions)
+          ? (quizData as any).questions
           : [];
         setQuestions(questionsData);
-        
+
         // Only try to get session if sessionId is valid
         if (!isNaN(sessionId) && sessionId > 0) {
           try {
             const sessionData = await mcqsService.getSession(sessionId);
-            
+
             // If session is already completed, show results
             if (sessionData.completed_at) {
               setShowingResults(true);
             }
-            
+
             setSession(sessionData);
-            
+
             // If we have answers in the session, populate them
             if (sessionData.answers_json) {
+              console.log('answers_json type:', typeof sessionData.answers_json);
+              console.log('answers_json structure:', JSON.stringify(sessionData.answers_json, null, 2));
+
               const answers: { [key: number]: string } = {};
-              sessionData.answers_json.forEach((answer: any) => {
-                answers[answer.question_id] = answer.selected_option;
-              });
+
+              // Handle different formats of answers_json
+              if (Array.isArray(sessionData.answers_json)) {
+                // If it's already an array, use forEach as intended
+                sessionData.answers_json.forEach((answer: any) => {
+                  answers[answer.question_id] = answer.selected_option;
+                });
+              } else if (typeof sessionData.answers_json === 'object') {
+                // If it's an object, try to extract data differently
+                try {
+                  // It might be a JSON string that needs parsing
+                  const parsedAnswers = typeof sessionData.answers_json === 'string'
+                    ? JSON.parse(sessionData.answers_json)
+                    : sessionData.answers_json;
+
+                  // Handle if parsedAnswers is an array
+                  if (Array.isArray(parsedAnswers)) {
+                    parsedAnswers.forEach((answer: any) => {
+                      answers[answer.question_id] = answer.selected_option;
+                    });
+                  } else {
+                    // If it's an object with question_id keys
+                    Object.entries(parsedAnswers).forEach(([key, value]: [string, any]) => {
+                      const questionId = parseInt(key, 10);
+                      if (!isNaN(questionId) && value?.selected_option) {
+                        answers[questionId] = value.selected_option;
+                      }
+                    });
+                  }
+                } catch (e) {
+                  console.error('Error parsing answers_json:', e);
+                }
+              }
+
               setUserAnswers(answers);
             }
           } catch (sessionErr) {
@@ -112,14 +146,14 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
         setLoading(false);
       }
     };
-    
+
     fetchQuizAndSession();
   }, [parsedQuizId, sessionId]);
-  
+
   // Timer for elapsed time
   useEffect(() => {
     if (showingResults) return;
-    
+
     const timer = setInterval(() => {
       const now = new Date();
       const diffMs = now.getTime() - startTime.getTime();
@@ -127,23 +161,23 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       const diffSecs = Math.floor((diffMs % 60000) / 1000);
       setElapsedTime(`${diffMins.toString().padStart(2, '0')}:${diffSecs.toString().padStart(2, '0')}`);
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [startTime, showingResults]);
-  
+
   // Navigation functions
   const goToPreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
-  
+
   const goToNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
-  
+
   // Answer selection
   const selectAnswer = (questionId: number, option: string) => {
     setUserAnswers(prev => ({
@@ -151,48 +185,48 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       [questionId]: option
     }));
   };
-  
+
   // Save quiz progress without submitting
   const saveProgress = async () => {
     if (!session) return;
-    
+
     try {
       setSaving(true);
       setError(null);
-      
+
       // Update the session with current answers but don't complete it
       await mcqsService.updateSession(session.id, userAnswers);
-      
+
       // Show success message with toast
       toast({
         title: "Progress saved",
         description: "Your quiz progress has been saved successfully.",
         variant: "success",
       });
-      
+
       setSaving(false);
     } catch (err) {
       console.error('Failed to save quiz progress:', err);
       setError(err);
-      
+
       toast({
         title: "Failed to save progress",
         description: "There was an error saving your progress. Please try again.",
         variant: "destructive",
       });
-      
+
       setSaving(false);
     }
   };
-  
+
   // Submit quiz
   const submitQuiz = async () => {
     if (!session) return;
-    
+
     try {
       setSubmitting(true);
       setError(null);
-      
+
       const submittedSession = await mcqsService.submitSession(session.id, userAnswers);
       setSession(submittedSession);
       setShowingResults(true);
@@ -203,12 +237,12 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       setSubmitting(false);
     }
   };
-  
+
   // Function to get status of a question
   const getQuestionStatus = (questionIndex: number) => {
     const question = questions[questionIndex];
     if (!question) return 'unanswered';
-    
+
     if (!showingResults) {
       return userAnswers[question.id] ? 'answered' : 'unanswered';
     } else {
@@ -217,25 +251,29 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       return userAnswer === question.correct_option ? 'correct' : 'incorrect';
     }
   };
-  
+
   // Generate a summary of the quiz results
   const getResultsSummary = () => {
     if (!session || !showingResults) return null;
-    
+
     const totalQuestions = questions.length;
     const attempted = Object.keys(userAnswers).length;
     const correct = questions.filter(q => userAnswers[q.id] === q.correct_option).length;
-    
+
     // Fix score calculation:
-    // 1. Use the session.score if available from the API
-    // 2. If not available, calculate it properly as a percentage of correct answers out of total questions
-    // 3. Make sure we round to whole numbers
-    const score = session.score !== null && session.score !== undefined
-      ? session.score 
-      : totalQuestions > 0
-        ? Math.round((correct / totalQuestions) * 100)
-        : 0;
-    
+    // 1. If session.score is provided by the API, use it
+    // 2. Otherwise calculate percentage properly with multiplication by 100
+    // 3. Round to nearest whole number
+    console.log('session.score:', session.score);
+    console.log('session.total_questions:', session.total_questions);
+    console.log('totalQuestions:', totalQuestions);
+    console.log('session.score !== null && session.score !== undefined:', session.score !== null && session.score !== undefined);
+    console.log('totalQuestions > 0:', totalQuestions > 0);
+    console.log('Math.round((session.score || 0) / session.total_questions * 100):', Math.round((session.score || 0) / session.total_questions * 100));
+    console.log('0:', 0);
+
+    const score = Math.round((session.score || 0) / session.total_questions * 100)
+
     return {
       totalQuestions,
       attempted,
@@ -251,7 +289,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
     const value = question[`option_${optionKey.toLowerCase()}` as keyof typeof question];
     return typeof value === 'string' ? value : '';
   };
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -259,20 +297,20 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
         <ErrorAlert error={error} />
         <div className="mt-4">
           <Button asChild variant="ghost">
-            <Link href="/mcqs/quizzes">Back to Quizzes</Link>
+            <Link href="/quizzes">Back to Quizzes</Link>
           </Button>
         </div>
       </div>
     );
   }
-  
+
   if (!quiz || !questions.length) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -286,7 +324,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild>
-              <Link href="/mcqs/quizzes">
+              <Link href="/quizzes">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Quizzes
               </Link>
@@ -302,39 +340,39 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       </div>
     );
   }
-  
+
   if (!session) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-8">
           <div className="flex items-center mb-6">
             <Button asChild variant="ghost" className="mr-4">
-              <Link href={`/mcqs/quizzes/${quizId}`}>
+              <Link href={`/quizzes/${quizId}`}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Quiz Details
               </Link>
             </Button>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{quiz.title}</h1>
           </div>
-          
+
           <div className="text-center py-8">
             <div className="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
               <ListChecks className="w-10 h-10 text-blue-600 dark:text-blue-400" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Start a New Quiz Session</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto">
-              {!sessionParam ? 
-                "You're ready to start taking this quiz!" : 
+              {!sessionParam ?
+                "You're ready to start taking this quiz!" :
                 "We couldn't find your previous session. Start a new one instead?"}
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
+              <Button
                 onClick={async () => {
                   try {
                     setLoading(true);
                     const newSession = await mcqsService.startQuizSession(parsedQuizId);
-                    router.push(`/mcqs/quizzes/${quizId}/take?session=${newSession.id}`);
+                    router.push(`/quizzes/${quizId}/take?session=${newSession.id}`);
                   } catch (err) {
                     setError(err);
                     setLoading(false);
@@ -350,9 +388,9 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                 )}
                 Start Quiz
               </Button>
-              
+
               <Button asChild variant="outline">
-                <Link href="/mcqs/quizzes">
+                <Link href="/quizzes">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to All Quizzes
                 </Link>
@@ -363,7 +401,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       </div>
     );
   }
-  
+
   if (isNaN(parsedQuizId) || isNaN(sessionId) || sessionId === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -373,28 +411,28 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
             The quiz session is invalid or missing. Please return to the quizzes page.
           </p>
           <Button asChild>
-            <Link href="/mcqs/quizzes">Back to Quizzes</Link>
+            <Link href="/quizzes">Back to Quizzes</Link>
           </Button>
         </div>
       </div>
     );
   }
-  
+
   const currentQuestion = questions[currentQuestionIndex];
   const results = showingResults ? getResultsSummary() : null;
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Navigation links */}
       <div className="flex flex-wrap gap-2 mb-6">
         <Button asChild variant="outline" size="sm">
-          <Link href={`/mcqs/quizzes/${quiz.id}`}>
+          <Link href={`/quizzes/${quiz.id}`}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Quiz
           </Link>
         </Button>
         <Button asChild variant="outline" size="sm">
-          <Link href="/mcqs/quizzes">
+          <Link href="/quizzes">
             <ListChecks className="w-4 h-4 mr-2" />
             All Quizzes
           </Link>
@@ -406,7 +444,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
           </Link>
         </Button>
       </div>
-        
+
       {showingResults ? (
         // Results Screen
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
@@ -414,13 +452,41 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
             <h1 className="text-2xl font-bold mb-2">Quiz Results</h1>
             <p className="text-blue-100">{quiz.title}</p>
           </div>
-          
+
           <div className="p-6">
             {/* Score Summary */}
             <div className="mb-8">
               <div className="flex flex-col items-center mb-6">
-                <div className="flex items-center justify-center w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900 mb-4">
-                  <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{results?.score}%</span>
+                <div className="relative flex items-center justify-center w-32 h-32 mb-4">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    {/* Background circle */}
+                    <circle
+                      className="text-gray-200 dark:text-gray-700"
+                      strokeWidth="10"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="40"
+                      cx="50"
+                      cy="50"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                      className="text-blue-600 dark:text-blue-400"
+                      strokeWidth="10"
+                      strokeDasharray={251.2}
+                      strokeDashoffset={251.2 - (251.2 * (results?.score || 0)) / 100}
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="40"
+                      cx="50"
+                      cy="50"
+                      transform="rotate(-90 50 50)"
+                    />
+                  </svg>
+                  <div className="absolute">
+                    <span className="text-3xl font-bold text-gray-900 dark:text-white">{results?.score}%</span>
+                  </div>
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                   {results?.score && results.score >= 70 ? 'Well done!' : 'Keep practicing!'}
@@ -429,7 +495,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                   You answered {results?.correct} out of {results?.totalQuestions} questions correctly.
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">{results?.totalQuestions}</div>
@@ -449,7 +515,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                 </div>
               </div>
             </div>
-            
+
             {/* Question Review */}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Question Review</h3>
             <div className="space-y-6">
@@ -457,26 +523,24 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                 const userAnswer = userAnswers[question.id];
                 const isCorrect = userAnswer === question.correct_option;
                 const questionStatus = getQuestionStatus(index);
-                
+
                 return (
-                  <div 
-                    key={question.id} 
-                    className={`p-4 rounded-lg border ${
-                      questionStatus === 'correct' 
-                        ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' 
-                        : questionStatus === 'incorrect'
-                          ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
-                          : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
-                    }`}
+                  <div
+                    key={question.id}
+                    className={`p-4 rounded-lg border ${questionStatus === 'correct'
+                      ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
+                      : questionStatus === 'incorrect'
+                        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+                        : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                      }`}
                   >
                     <div className="flex items-start mb-4">
-                      <div className={`mt-1 flex-shrink-0 w-5 h-5 ${
-                        questionStatus === 'correct' 
-                          ? 'text-green-500' 
-                          : questionStatus === 'incorrect' 
-                            ? 'text-red-500' 
-                            : 'text-gray-400'
-                      }`}>
+                      <div className={`mt-1 flex-shrink-0 w-5 h-5 ${questionStatus === 'correct'
+                        ? 'text-green-500'
+                        : questionStatus === 'incorrect'
+                          ? 'text-red-500'
+                          : 'text-gray-400'
+                        }`}>
                         {questionStatus === 'correct' && <CheckCircle className="w-5 h-5" />}
                         {questionStatus === 'incorrect' && <XCircle className="w-5 h-5" />}
                         {questionStatus === 'unanswered' && <HelpCircle className="w-5 h-5" />}
@@ -490,18 +554,18 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                         </p>
                       </div>
                     </div>
-                    
+
                     {/* Options */}
                     <div className="space-y-2 ml-8">
                       {['A', 'B', 'C', 'D'].map(option => {
                         const optionText = getOptionText(question, option);
                         if (!optionText) return null;
-                        
+
                         const isUserSelection = userAnswer === option;
                         const isCorrectOption = question.correct_option === option;
-                        
+
                         let optionClassName = 'flex items-center p-3 rounded-md border ';
-                        
+
                         if (isUserSelection && isCorrectOption) {
                           optionClassName += 'border-green-500 bg-green-50 dark:bg-green-900/20';
                         } else if (isUserSelection && !isCorrectOption) {
@@ -511,7 +575,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                         } else {
                           optionClassName += 'border-gray-200 dark:border-gray-700';
                         }
-                        
+
                         return (
                           <div key={option} className={optionClassName}>
                             <div className="w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center mr-3 border border-current">
@@ -526,17 +590,17 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                 );
               })}
             </div>
-            
+
             {/* Actions */}
             <div className="flex justify-between mt-8">
               <Button asChild variant="outline">
-                <Link href={`/mcqs/quizzes/${quiz.id}`}>
+                <Link href={`/quizzes/${quiz.id}`}>
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Back to Quiz
                 </Link>
               </Button>
               <Button asChild>
-                <Link href="/mcqs/quizzes">
+                <Link href="/quizzes">
                   Find More Quizzes
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Link>
@@ -561,8 +625,8 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                 <Clock className="w-4 h-4 mr-1" />
                 <span>{elapsedTime}</span>
               </div>
-              <Button 
-                onClick={submitQuiz} 
+              <Button
+                onClick={submitQuiz}
                 disabled={submitting}
                 variant="outline"
                 className="text-sm"
@@ -581,20 +645,20 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
               </Button>
             </div>
           </div>
-          
+
           {/* Question Navigation */}
           <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
             <div className="flex space-x-2">
               {questions.map((_, index) => {
                 const status = getQuestionStatus(index);
                 let bgColor = 'bg-gray-200 dark:bg-gray-700';
-                
+
                 if (status === 'answered') {
                   bgColor = 'bg-blue-500 text-white';
                 } else if (index === currentQuestionIndex) {
                   bgColor = 'bg-yellow-500 text-white';
                 }
-                
+
                 return (
                   <button
                     key={index}
@@ -607,7 +671,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
               })}
             </div>
           </div>
-          
+
           {/* Current Question */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
             <div className="p-6">
@@ -622,30 +686,28 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                   </div>
                 )}
               </div>
-              
+
               {/* Options */}
               <div className="space-y-3">
                 {['A', 'B', 'C', 'D'].map(option => {
                   const optionText = getOptionText(currentQuestion, option);
                   if (!optionText) return null;
-                  
+
                   const isSelected = userAnswers[currentQuestion.id] === option;
-                  
+
                   return (
                     <label
                       key={option}
-                      className={`flex items-center p-4 rounded-md border cursor-pointer transition-colors ${
-                        isSelected 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300' 
-                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                      }`}
+                      className={`flex items-center p-4 rounded-md border cursor-pointer transition-colors ${isSelected
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300'
+                        : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                        }`}
                       onClick={() => selectAnswer(currentQuestion.id, option)}
                     >
-                      <div className={`w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center mr-3 ${
-                        isSelected 
-                          ? 'bg-blue-500 text-white' 
-                          : 'border border-gray-300 dark:border-gray-600'
-                      }`}>
+                      <div className={`w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center mr-3 ${isSelected
+                        ? 'bg-blue-500 text-white'
+                        : 'border border-gray-300 dark:border-gray-600'
+                        }`}>
                         {isSelected ? <Check className="w-4 h-4" /> : option}
                       </div>
                       <span className="flex-grow">
@@ -656,7 +718,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                 })}
               </div>
             </div>
-            
+
             {/* Question Navigation */}
             <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div className="flex items-center space-x-4">
@@ -669,7 +731,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Previous
                 </Button>
-                
+
                 <Button
                   onClick={goToNextQuestion}
                   disabled={currentQuestionIndex === questions.length - 1 || showingResults}
@@ -680,7 +742,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 {!showingResults && session && (
                   <Button
@@ -702,7 +764,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                     )}
                   </Button>
                 )}
-                
+
                 {!showingResults && (
                   <Button
                     onClick={submitQuiz}
@@ -722,13 +784,13 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                     )}
                   </Button>
                 )}
-                
+
                 {showingResults && (
                   <Button
                     asChild
                     size="sm"
                   >
-                    <Link href="/mcqs/sessions">
+                    <Link href="/quizzes/sessions">
                       <ListChecks className="w-4 h-4 mr-2" />
                       Quiz History
                     </Link>

@@ -8,9 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import FileSelector from '@/components/FileSelector';
-import { mcqsService } from '@/services/mcqs';
-import { 
-  ArrowLeft, 
+import { mcqsService, quizzesService } from '@/services/mcqs';
+import {
+  ArrowLeft,
   Loader2,
   MessageSquare,
   Sliders,
@@ -24,7 +24,7 @@ export default function GenerateMCQsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useProtectedRoute();
-  
+
   const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
   const [initialFileIds, setInitialFileIds] = useState<number[]>([]);
   const [numQuestions, setNumQuestions] = useState(10);
@@ -33,7 +33,7 @@ export default function GenerateMCQsPage() {
   const [createQuiz, setCreateQuiz] = useState(true);
   const [quizTitle, setQuizTitle] = useState('');
   const [quizDescription, setQuizDescription] = useState('');
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationSuccess, setGenerationSuccess] = useState(false);
   const [generatedQuizId, setGeneratedQuizId] = useState<number | null>(null);
@@ -52,10 +52,10 @@ export default function GenerateMCQsPage() {
     if (files) {
       try {
         // Handle both comma-separated values and single values
-        const fileIds = files.includes(',') 
+        const fileIds = files.includes(',')
           ? files.split(',').map(id => parseInt(id.trim(), 10))
           : [parseInt(files.trim(), 10)];
-        
+
         const validFileIds = fileIds.filter(id => !isNaN(id));
         setSelectedFileIds(validFileIds);
         setInitialFileIds(validFileIds);
@@ -74,8 +74,8 @@ export default function GenerateMCQsPage() {
     try {
       setIsGenerating(true);
       setError(null);
-      
-      const response = await mcqsService.generateMCQs({
+
+      const response = await quizzesService.generateQuiz({
         physical_file_ids: selectedFileIds,
         num_questions: numQuestions,
         difficulty_level: difficultyLevel,
@@ -84,12 +84,12 @@ export default function GenerateMCQsPage() {
         quiz_title: quizTitle || undefined,
         quiz_description: quizDescription || undefined
       });
-      
+
       setGenerationSuccess(true);
-      
+
       // Assuming the response contains the generated quiz ID
-      if (response && response.quiz_id) {
-        setGeneratedQuizId(response.quiz_id);
+      if (response && response.id) {
+        setGeneratedQuizId(response.id);
       }
     } catch (error) {
       console.error('Failed to generate MCQs:', error);
@@ -135,16 +135,16 @@ export default function GenerateMCQsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" asChild>
-                <Link href="/files" className="flex items-center space-x-2">
+                <Link href="/quizzes" className="flex items-center space-x-2">
                   <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Files</span>
+                  <span>Back to Quizzes</span>
                 </Link>
               </Button>
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
               <div className="flex items-center space-x-2">
                 <MessageSquare className="w-5 h-5 text-blue-500" />
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Generate MCQs
+                  Generate Quiz
                 </h1>
               </div>
             </div>
@@ -156,9 +156,9 @@ export default function GenerateMCQsPage() {
         <div className="max-w-4xl mx-auto">
           {error && (
             <div className="mb-6">
-              <ErrorAlert 
-                error={error} 
-                dismissible 
+              <ErrorAlert
+                error={error}
+                dismissible
                 onDismiss={() => setError(null)}
               />
             </div>
@@ -198,7 +198,7 @@ export default function GenerateMCQsPage() {
                 </Button>
                 {generatedQuizId && (
                   <Button
-                    onClick={() => router.push(`/mcqs/quizzes/${generatedQuizId}`)}
+                    onClick={() => router.push(`/quizzes/${generatedQuizId}`)}
                     className="flex-1"
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
@@ -217,7 +217,7 @@ export default function GenerateMCQsPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                   Choose the files you want to generate MCQs from. You can select up to 5 files.
                 </p>
-                
+
                 <FileSelector
                   selectedFileIds={selectedFileIds}
                   initialFileIds={initialFileIds}
@@ -234,7 +234,7 @@ export default function GenerateMCQsPage() {
                     Generation Options
                   </h2>
                 </div>
-                
+
                 <div className="space-y-6">
                   {/* Number of Questions */}
                   <div>
@@ -317,7 +317,7 @@ export default function GenerateMCQsPage() {
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Quiz Options
                 </h2>
-                
+
                 <div className="space-y-6">
                   {/* Create Quiz Toggle */}
                   <div className="flex items-center space-x-3">
@@ -354,7 +354,7 @@ export default function GenerateMCQsPage() {
                           If left blank, a title will be generated automatically.
                         </p>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Quiz Description (Optional)
@@ -375,7 +375,7 @@ export default function GenerateMCQsPage() {
               <div className="flex justify-end space-x-4">
                 <Button
                   variant="outline"
-                  onClick={() => router.push('/files')}
+                  onClick={() => router.push('/quizzes')}
                 >
                   Cancel
                 </Button>
@@ -392,7 +392,7 @@ export default function GenerateMCQsPage() {
                   ) : (
                     <>
                       <MessageSquare className="w-4 h-4 mr-2" />
-                      Generate MCQs
+                      Generate Quiz
                     </>
                   )}
                 </Button>

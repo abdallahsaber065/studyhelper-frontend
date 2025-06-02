@@ -15,7 +15,7 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 export default function EditQuestionPage({ params }: { params: Promise<{ questionId: string }> }) {
   const router = useRouter();
   const { user } = useProtectedRoute();
-  const { questionId} = use(params);
+  const { questionId } = use(params);
   const parsedId = parseInt(questionId);
   // Form state
   const [questionText, setQuestionText] = useState('');
@@ -31,7 +31,7 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
 
   // Tags for selection
   const [availableTags, setAvailableTags] = useState<QuestionTagRead[]>([]);
-  
+
   // UI state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,14 +44,14 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
       try {
         setLoading(true);
         setError(null);
-                
+
         // Handle invalid ID
         if (isNaN(parsedId)) {
           throw new Error("Invalid question ID");
         }
-        
+
         const questionData = await mcqsService.getQuestionById(parsedId);
-        
+
         // Set form values
         setQuestionText(questionData.question_text);
         setOptionA(questionData.option_a);
@@ -63,7 +63,7 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
         setHint(questionData.hint || '');
         setDifficultyLevel(questionData.difficulty_level);
         setSelectedTagIds(questionData.tags.map(tag => tag.id));
-        
+
         // Fetch tags
         const tagsData = await mcqsService.getTags();
         setAvailableTags(tagsData);
@@ -75,28 +75,28 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
         setLoadingTags(false);
       }
     };
-    
+
     fetchQuestionAndTags();
   }, [parsedId]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (!questionText.trim() || !optionA.trim() || !optionB.trim()) {
       setError({ detail: 'Question text, Option A, and Option B are required.' });
       return;
     }
-    
+
     try {
       setSaving(true);
       setError(null);
-      
+
       if (isNaN(parsedId)) {
         throw new Error("Invalid question ID");
       }
-      
+
       const questionUpdate = {
         question_text: questionText,
         option_a: optionA,
@@ -109,11 +109,11 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
         difficulty_level: difficultyLevel,
         tag_ids: selectedTagIds
       };
-      
+
       await mcqsService.updateQuestion(parsedId, questionUpdate);
-      
+
       // Redirect back to question details
-      router.push(`/mcqs/questions/${questionId}`);
+      router.push(`/quizzes/questions/${questionId}`);
     } catch (err) {
       console.error('Failed to update question:', err);
       setError(err);
@@ -145,7 +145,7 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
         <Button asChild variant="ghost" className="mr-4">
-          <Link href={`/mcqs/questions/${questionId}`}>
+          <Link href={`/quizzes/questions/${questionId}`}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Question
           </Link>
@@ -226,8 +226,8 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
               {['A', 'B', 'C', 'D'].map((option) => (
                 <label key={option} className={`
                   flex items-center justify-center px-4 py-2 rounded-md border
-                  ${correctOption === option 
-                    ? 'bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-400' 
+                  ${correctOption === option
+                    ? 'bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-400'
                     : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'}
                   ${(option === 'C' && !optionC) || (option === 'D' && !optionD) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}>
@@ -280,8 +280,8 @@ export default function EditQuestionPage({ params }: { params: Promise<{ questio
               {['Easy', 'Medium', 'Hard'].map((level) => (
                 <label key={level} className={`
                   flex items-center justify-center px-4 py-2 rounded-md border cursor-pointer
-                  ${difficultyLevel === level 
-                    ? level === 'Easy' 
+                  ${difficultyLevel === level
+                    ? level === 'Easy'
                       ? 'bg-green-100 border-green-500 text-green-700 dark:bg-green-900/30 dark:border-green-500 dark:text-green-400'
                       : level === 'Medium'
                         ? 'bg-yellow-100 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-500 dark:text-yellow-400'

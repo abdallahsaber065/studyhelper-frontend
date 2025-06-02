@@ -66,11 +66,11 @@ const phases: Phase[] = [
   {
     id: 3,
     title: "AI-Powered Content Generation",
-    description: "Generate summaries and MCQs using AI.",
+    description: "Generate summaries and quizzes using AI.",
     status: "completed",
     features: [
       'AI-powered document summarization',
-      'Automatic MCQ generation',
+      'Automatic quiz generation',
       'Custom instruction support',
       'Summary editing and management',
       'Content quality assessment'
@@ -78,25 +78,25 @@ const phases: Phase[] = [
     links: [
       { label: "Generate Summary", href: "/summaries/generate" },
       { label: "My Summaries", href: "/summaries" },
-      { label: "Generate MCQs", href: "/mcqs/generate" },
+      { label: "Generate Quiz", href: "/quizzes/generate" },
     ],
   },
   {
     id: 4,
-    title: "MCQs, Quizzes, and Sessions",
+    title: "Quizzes, and Sessions",
     description: "Create and manage quizzes, track sessions.",
     status: "completed",
     features: [
-      'MCQ question creation and editing',
+      'Question creation and editing',
       'Quiz builder with question selection',
       'Interactive quiz taking interface',
       'Session management and scoring',
       'Performance analytics'
     ],
     links: [
-      { label: "Questions", href: "/mcqs/questions" },
-      { label: "Question Tags", href: "/mcqs/tags" },
-      { label: "Quizzes", href: "/mcqs/quizzes" },
+      { label: "Questions", href: "/quizzes/questions" },
+      { label: "Question Tags", href: "/quizzes/questions" },
+      { label: "Quizzes", href: "/quizzes" },
     ],
   },
   {
@@ -165,7 +165,7 @@ export default function DemoPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/health`, {
         method: 'GET'
       });
-      
+
       if (response.ok) {
         setApiStatus('healthy');
       } else {
@@ -281,11 +281,11 @@ export default function DemoPage() {
                     </p>
                   </div>
                 </div>
-                
+
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   {phase.description}
                 </p>
-                
+
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                     Implemented Features:
@@ -299,7 +299,7 @@ export default function DemoPage() {
                     ))}
                   </ul>
                 </div>
-                
+
                 {phase.links && (
                   <div className="flex flex-wrap gap-2">
                     {phase.links.map((link, index) => (
@@ -347,11 +347,11 @@ export default function DemoPage() {
                     </p>
                   </div>
                 </div>
-                
+
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   {phase.description}
                 </p>
-                
+
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                     Planned Features:
@@ -407,13 +407,13 @@ export default function DemoPage() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="justify-start">
-              <Link href="/mcqs/generate">
+              <Link href="/quizzes/generate">
                 <FileText className="w-4 h-4 mr-2" />
-                Generate MCQs
+                Generate Quiz
               </Link>
             </Button>
             <Button asChild variant="outline" className="justify-start">
-              <Link href="/mcqs/quizzes">
+              <Link href="/quizzes">
                 <FileText className="w-4 h-4 mr-2" />
                 Manage Quizzes
               </Link>

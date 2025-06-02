@@ -12,7 +12,7 @@ import { ArrowLeft, Edit, Trash2, Tag, Check, X } from 'lucide-react';
 
 export default function QuestionDetailsPage({ params }: { params: Promise<{ questionId: string }> }) {
   const router = useRouter();
-  const { questionId} = use(params);
+  const { questionId } = use(params);
   const parsedId = parseInt(questionId);
   const [question, setQuestion] = useState<McqQuestionRead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,11 +24,11 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
       try {
         setLoading(true);
         setError(null);
-        
+
         if (isNaN(parsedId)) {
           throw new Error("Invalid question ID");
         }
-        
+
         const data = await mcqsService.getQuestionById(parsedId);
         setQuestion(data);
       } catch (err) {
@@ -38,22 +38,22 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
         setLoading(false);
       }
     };
-    
+
     fetchQuestion();
   }, [parsedId]);
 
   // Handle deleting the question
   const handleDelete = async () => {
     if (!question) return;
-    
+
     if (!confirm('Are you sure you want to delete this question?')) {
       return;
     }
-    
+
     try {
       setLoading(true);
       await mcqsService.deleteQuestion(question.id);
-      router.push('/mcqs/questions');
+      router.push('/quizzes/questions');
     } catch (err) {
       console.error('Failed to delete question:', err);
       setError(err);
@@ -76,7 +76,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
         colorClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
         break;
     }
-    
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
         {difficulty}
@@ -100,7 +100,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
         <ErrorAlert error={error} />
         <div className="mt-4">
           <Button asChild variant="ghost">
-            <Link href="/mcqs/questions">Back to Questions</Link>
+            <Link href="/quizzes/questions">Back to Questions</Link>
           </Button>
         </div>
       </div>
@@ -116,7 +116,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
             The question you're looking for doesn't exist or you don't have permission to view it.
           </p>
           <Button asChild>
-            <Link href="/mcqs/questions">Back to Questions</Link>
+            <Link href="/quizzes/questions">Back to Questions</Link>
           </Button>
         </div>
       </div>
@@ -128,7 +128,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
         <div className="flex items-center mb-4 sm:mb-0">
           <Button asChild variant="ghost" className="mr-4">
-            <Link href="/mcqs/questions">
+            <Link href="/quizzes/questions">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Questions
             </Link>
@@ -137,7 +137,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
         </div>
         <div className="flex space-x-3">
           <Button asChild variant="outline">
-            <Link href={`/mcqs/questions/${question.id}/edit`} className="flex items-center">
+            <Link href={`/quizzes/questions/${question.id}/edit`} className="flex items-center">
               <Edit className="w-4 h-4 mr-2" />
               Edit
             </Link>
@@ -184,7 +184,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
                 </span>
               </div>
             </div>
-            
+
             <div className={`p-3 rounded-lg border ${question.correct_option === 'B' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className="flex items-center">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${question.correct_option === 'B' ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
@@ -195,7 +195,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
                 </span>
               </div>
             </div>
-            
+
             {question.option_c && (
               <div className={`p-3 rounded-lg border ${question.correct_option === 'C' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center">
@@ -208,7 +208,7 @@ export default function QuestionDetailsPage({ params }: { params: Promise<{ ques
                 </div>
               </div>
             )}
-            
+
             {question.option_d && (
               <div className={`p-3 rounded-lg border ${question.correct_option === 'D' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center">

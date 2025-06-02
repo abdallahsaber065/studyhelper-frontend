@@ -41,7 +41,7 @@ import {
 export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: string }> }) {
   const router = useRouter();
   const { user } = useProtectedRoute();
-  
+
   const [quiz, setQuiz] = useState<McqQuizRead | null>(null);
   const [loading, setLoading] = useState(true);
   const [startingSession, setStartingSession] = useState(false);
@@ -64,7 +64,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         }
         const data = await mcqsService.getQuizById(parsedQuizId);
         setQuiz(data);
-        
+
         // Check for active session for this quiz
         const session = await mcqsService.getActiveSessionForQuiz(parsedQuizId);
         setActiveSession(session);
@@ -75,49 +75,49 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         setLoading(false);
       }
     };
-    
+
     fetchQuiz();
   }, [parsedQuizId]);
 
   // Start a quiz session
   const startQuizSession = async () => {
     if (!quiz) return;
-    
+
     // If there's an active session, ask the user if they want to resume it
     if (activeSession) {
       setShowSessionModal(true);
       return;
     }
-    
+
     try {
       setStartingSession(true);
       const session = await mcqsService.startQuizSession(quiz.id);
-      router.push(`/mcqs/quizzes/${quiz.id}/take?session=${session.id}`);
+      router.push(`/quizzes/${quiz.id}/take?session=${session.id}`);
     } catch (err) {
       console.error('Failed to start quiz session:', err);
       setError(err);
       setStartingSession(false);
     }
   };
-  
+
   // Resume an existing session
   const resumeSession = () => {
     if (!activeSession || !quiz) return;
-    
-    router.push(`/mcqs/quizzes/${quiz.id}/take?session=${activeSession.id}`);
+
+    router.push(`/quizzes/${quiz.id}/take?session=${activeSession.id}`);
     setShowSessionModal(false);
   };
-  
+
   // Start a new session and abandon the existing one
   const startNewSession = async () => {
     if (!quiz) return;
-    
+
     try {
       setStartingSession(true);
       setShowSessionModal(false);
-      
+
       const session = await mcqsService.startQuizSession(quiz.id);
-      router.push(`/mcqs/quizzes/${quiz.id}/take?session=${session.id}`);
+      router.push(`/quizzes/${quiz.id}/take?session=${session.id}`);
     } catch (err) {
       console.error('Failed to start new quiz session:', err);
       setError(err);
@@ -128,11 +128,11 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
   // Handle quiz deletion
   const handleDeleteQuiz = async () => {
     if (!quiz) return;
-    
+
     try {
       setDeleting(true);
       await mcqsService.deleteQuiz(quiz.id);
-      router.push('/mcqs/quizzes');
+      router.push('/quizzes');
     } catch (err) {
       console.error('Failed to delete quiz:', err);
       setError(err);
@@ -145,7 +145,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
   const renderDifficultyBadge = (difficulty: DifficultyLevelEnum) => {
     let colorClass = '';
     let Icon: LucideIcon = AlertCircle;
-    
+
     switch (difficulty) {
       case 'Easy':
         colorClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
@@ -160,7 +160,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         Icon = AlertCircle;
         break;
     }
-    
+
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${colorClass}`}>
         <Icon className="w-4 h-4 mr-1.5" />
@@ -185,7 +185,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         <ErrorAlert error={error} />
         <div className="mt-4">
           <Button asChild variant="ghost">
-            <Link href="/mcqs/quizzes">Back to Quizzes</Link>
+            <Link href="/quizzes">Back to Quizzes</Link>
           </Button>
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
             The quiz you're looking for doesn't exist or you don't have permission to view it.
           </p>
           <Button asChild>
-            <Link href="/mcqs/quizzes">Back to Quizzes</Link>
+            <Link href="/quizzes">Back to Quizzes</Link>
           </Button>
         </div>
       </div>
@@ -215,12 +215,12 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         items={[
           {
             label: 'MCQs',
-            href: '/mcqs/questions',
+            href: '/quizzes/questions',
             icon: <BookOpen className="w-4 h-4" />
           },
           {
             label: 'Quizzes',
-            href: '/mcqs/quizzes',
+            href: '/quizzes',
             icon: <ListChecks className="w-4 h-4" />
           },
           {
@@ -232,13 +232,13 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
 
       <div className="flex flex-wrap gap-4 mb-6">
         <Button asChild variant="outline" size="sm">
-          <Link href="/mcqs/quizzes">
+          <Link href="/quizzes">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Quizzes
           </Link>
         </Button>
         <Button asChild variant="outline" size="sm">
-          <Link href="/mcqs/sessions">
+          <Link href="/quizzes/sessions">
             <Clock className="w-4 h-4 mr-2" />
             Quiz History
           </Link>
@@ -246,14 +246,14 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         {quiz.user_id === parseInt(user?.id ?? '') && (
           <>
             <Button asChild variant="outline" size="sm">
-              <Link href={`/mcqs/quizzes/${quiz.id}/edit`}>
+              <Link href={`/quizzes/${quiz.id}/edit`}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Quiz
               </Link>
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
               onClick={() => setShowDeleteModal(true)}
             >
@@ -286,7 +286,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
           {quiz.description && (
             <p className="text-blue-100 dark:text-blue-200 mb-4">{quiz.description}</p>
           )}
-          
+
           <div className="flex flex-wrap gap-4 mt-4">
             <div className="inline-flex items-center text-sm text-blue-100">
               <ListChecks className="w-4 h-4 mr-1.5" />
@@ -312,10 +312,10 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
                 {quiz.description || `A ${quiz.difficulty_level.toLowerCase()} difficulty quiz with ${quiz.question_count} questions.`}
               </p>
             </div>
-            
+
             <div className="flex flex-wrap gap-3">
-              <Button 
-                onClick={startQuizSession} 
+              <Button
+                onClick={startQuizSession}
                 disabled={startingSession}
                 size="lg"
                 className="w-full md:w-auto flex items-center justify-center gap-2"
@@ -329,9 +329,9 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
                 )}
                 {startingSession ? "Starting..." : activeSession ? "Resume Quiz" : "Take Quiz"}
               </Button>
-              
+
               <Button asChild variant="outline">
-                <Link href="/mcqs/quizzes" className="w-full md:w-auto">
+                <Link href="/quizzes" className="w-full md:w-auto">
                   Browse More Quizzes
                 </Link>
               </Button>
@@ -339,7 +339,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
           </div>
         </div>
       </div>
-      
+
       {/* Delete Quiz Confirmation Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogContent>
@@ -350,15 +350,15 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowDeleteModal(false)}
               disabled={deleting}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteQuiz}
               disabled={deleting}
             >
@@ -377,7 +377,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Active Session Modal */}
       <Dialog open={showSessionModal} onOpenChange={setShowSessionModal}>
         <DialogContent>
@@ -387,7 +387,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
               You already have an active session for this quiz.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             <div className="flex items-center space-x-2 mb-2">
               <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -402,9 +402,9 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
               </span>
             </div>
           </div>
-          
+
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button 
+            <Button
               variant="outline"
               className="flex-1 sm:flex-none"
               onClick={resumeSession}
@@ -412,7 +412,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
               <Clock className="w-4 h-4 mr-2" />
               Continue Session
             </Button>
-            <Button 
+            <Button
               variant="outline"
               className="flex-1 sm:flex-none text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
               onClick={async () => {
@@ -421,7 +421,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
                     await mcqsService.deleteSession(activeSession.id);
                     setActiveSession(null);
                     setShowSessionModal(false);
-                    
+
                     // Start a new session
                     startNewSession();
                   }
@@ -434,7 +434,7 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
               <Trash2 className="w-4 h-4 mr-2" />
               Delete & Start New
             </Button>
-            <Button 
+            <Button
               variant="outline"
               className="flex-1 sm:flex-none"
               onClick={() => setShowSessionModal(false)}

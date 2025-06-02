@@ -38,7 +38,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 export default function QuizSessionsPage() {
   const router = useRouter();
   const { user } = useProtectedRoute();
-  
+
   const [sessions, setSessions] = useState<QuizSessionRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
@@ -46,7 +46,7 @@ export default function QuizSessionsPage() {
   const [sessionToDelete, setSessionToDelete] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("all");
-  
+
   // Load quiz sessions
   useEffect(() => {
     fetchSessions();
@@ -65,7 +65,7 @@ export default function QuizSessionsPage() {
       setLoading(false);
     }
   };
-  
+
   // Function to format date
   const formatDate = (dateString: string) => {
     try {
@@ -85,14 +85,14 @@ export default function QuizSessionsPage() {
   // Handle session deletion
   const handleDeleteSession = async () => {
     if (!sessionToDelete) return;
-    
+
     try {
       setDeleting(true);
       await mcqsService.deleteSession(sessionToDelete);
-      
+
       // Refresh the sessions list
       fetchSessions();
-      
+
       // Close the modal
       setDeleteModalOpen(false);
       setSessionToDelete(null);
@@ -109,7 +109,7 @@ export default function QuizSessionsPage() {
     setSessionToDelete(sessionId);
     setDeleteModalOpen(true);
   };
-  
+
   // Filter sessions based on active tab
   const filteredSessions = sessions.filter(session => {
     if (activeTab === "all") return true;
@@ -117,7 +117,7 @@ export default function QuizSessionsPage() {
     if (activeTab === "in-progress") return session.completed_at === null;
     return true;
   });
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -125,7 +125,7 @@ export default function QuizSessionsPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb Navigation */}
@@ -133,12 +133,12 @@ export default function QuizSessionsPage() {
         items={[
           {
             label: 'MCQs',
-            href: '/mcqs/questions',
+            href: '/quizzes/questions',
             icon: <BookOpen className="w-4 h-4" />
           },
           {
             label: 'Quizzes',
-            href: '/mcqs/quizzes',
+            href: '/quizzes',
             icon: <ListChecks className="w-4 h-4" />
           },
           {
@@ -147,15 +147,15 @@ export default function QuizSessionsPage() {
           }
         ]}
       />
-      
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quiz History</h1>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <Button asChild variant="outline">
-            <Link href="/mcqs/quizzes">
+            <Link href="/quizzes">
               <ListChecks className="w-4 h-4 mr-2" />
               Browse Quizzes
             </Link>
@@ -168,9 +168,9 @@ export default function QuizSessionsPage() {
           </Button>
         </div>
       </div>
-      
-      {error && <ErrorAlert error={error} className="mb-6" />}
-      
+
+      {error && <ErrorAlert error={error} />}
+
       {sessions.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
@@ -181,14 +181,14 @@ export default function QuizSessionsPage() {
             You haven't taken any quizzes yet.
           </p>
           <Button asChild>
-            <Link href="/mcqs/quizzes">Find a quiz to take</Link>
+            <Link href="/quizzes">Find a quiz to take</Link>
           </Button>
         </div>
       ) : (
         <>
-          <Tabs 
-            defaultValue="all" 
-            value={activeTab} 
+          <Tabs
+            defaultValue="all"
+            value={activeTab}
             onValueChange={setActiveTab}
             className="mb-6"
           >
@@ -198,7 +198,7 @@ export default function QuizSessionsPage() {
               <TabsTrigger value="completed">Completed</TabsTrigger>
             </TabsList>
           </Tabs>
-          
+
           {filteredSessions.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
@@ -208,21 +208,21 @@ export default function QuizSessionsPage() {
                 No {activeTab === "completed" ? "completed" : activeTab === "in-progress" ? "in-progress" : ""} sessions found
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
-                {activeTab === "completed" 
-                  ? "You haven't completed any quizzes yet." 
-                  : activeTab === "in-progress" 
-                    ? "You don't have any quizzes in progress." 
+                {activeTab === "completed"
+                  ? "You haven't completed any quizzes yet."
+                  : activeTab === "in-progress"
+                    ? "You don't have any quizzes in progress."
                     : "You haven't taken any quizzes yet."}
               </p>
               <Button asChild>
-                <Link href="/mcqs/quizzes">Find a quiz to take</Link>
+                <Link href="/quizzes">Find a quiz to take</Link>
               </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredSessions.map(session => (
-                <div 
-                  key={session.id} 
+                <div
+                  key={session.id}
                   className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
@@ -244,24 +244,24 @@ export default function QuizSessionsPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="p-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                       {session.quiz_title || 'Untitled Quiz'}
                     </h2>
-                    
+
                     <div className="flex flex-wrap gap-2 mb-4">
                       <div className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                         <ListChecks className="w-3 h-3 mr-1" />
                         {session.total_questions} questions
                       </div>
-                      
+
                       <div className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                         <CalendarClock className="w-3 h-3 mr-1" />
                         {formatDate(session.started_at)}
                       </div>
                     </div>
-                    
+
                     {session.completed_at && (
                       <div className="mb-4">
                         <div className="relative pt-1">
@@ -273,55 +273,54 @@ export default function QuizSessionsPage() {
                               {Math.round((session.score || 0) / session.total_questions * 100)}%
                             </div>
                           </div>
-                          <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
-                            <div 
-                              style={{ width: `${Math.round((session.score || 0) / session.total_questions * 100)}%` }} 
-                              className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                                (session.score || 0) / session.total_questions >= 0.8 
-                                  ? 'bg-green-500' 
-                                  : (session.score || 0) / session.total_questions >= 0.6 
-                                    ? 'bg-blue-500' 
-                                    : (session.score || 0) / session.total_questions >= 0.4 
-                                      ? 'bg-yellow-500' 
+                          <div className="overflow- hidden h-2 text-xs rounded bg-gray-200 dark:bg-gray-700">
+                            <div
+                              style={{ width: `${Math.round((session.score || 0) / session.total_questions * 100)}%` }}
+                              className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${(session.score || 0) / session.total_questions >= 0.8
+                                  ? 'bg-green-500'
+                                  : (session.score || 0) / session.total_questions >= 0.6
+                                    ? 'bg-blue-500'
+                                    : (session.score || 0) / session.total_questions >= 0.4
+                                      ? 'bg-yellow-500'
                                       : 'bg-red-500'
-                              }`}
+                                }`}
                             ></div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
                           <Clock className="w-3.5 h-3.5 mr-1" />
-                          <span>Time taken: {session.time_taken_seconds ? 
-                            `${Math.floor(session.time_taken_seconds / 60)}:${(session.time_taken_seconds % 60).toString().padStart(2, '0')}` 
+                          <span>Time taken: {session.time_taken_seconds ?
+                            `${Math.floor(session.time_taken_seconds / 60)}:${(session.time_taken_seconds % 60).toString().padStart(2, '0')}`
                             : 'N/A'}</span>
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex gap-2">
                       {session.completed_at ? (
-                        <Button 
+                        <Button
                           asChild
                           className="flex-1 flex items-center justify-center"
                         >
-                          <Link href={`/mcqs/quizzes/${session.quiz_id}/take?session=${session.id}`}>
+                          <Link href={`/quizzes/${session.quiz_id}/take?session=${session.id}`}>
                             <BarChart className="w-4 h-4 mr-2" />
                             View Results
                           </Link>
                         </Button>
                       ) : (
                         <>
-                          <Button 
+                          <Button
                             asChild
                             className="flex-1 flex items-center justify-center"
                           >
-                            <Link href={`/mcqs/quizzes/${session.quiz_id}/take?session=${session.id}`}>
+                            <Link href={`/quizzes/${session.quiz_id}/take?session=${session.id}`}>
                               <Clock className="w-4 h-4 mr-2" />
                               Continue Quiz
                             </Link>
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             className="flex items-center justify-center text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
                             onClick={() => confirmDelete(session.id)}
                           >
@@ -329,9 +328,9 @@ export default function QuizSessionsPage() {
                           </Button>
                         </>
                       )}
-                      
+
                       <Button asChild variant="outline" className="flex items-center justify-center">
-                        <Link href={`/mcqs/quizzes/${session.quiz_id}`}>
+                        <Link href={`/quizzes/${session.quiz_id}`}>
                           <ExternalLink className="w-4 h-4" />
                         </Link>
                       </Button>
@@ -343,7 +342,7 @@ export default function QuizSessionsPage() {
           )}
         </>
       )}
-      
+
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent>
@@ -354,15 +353,15 @@ export default function QuizSessionsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setDeleteModalOpen(false)}
               disabled={deleting}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteSession}
               disabled={deleting}
             >

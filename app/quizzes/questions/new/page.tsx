@@ -84,7 +84,7 @@ export default function NewQuestionPage() {
       const createdQuestion = await mcqsService.createQuestion(question);
       
       // Redirect to the questions list
-      router.push('/mcqs/questions');
+      router.push('/quizzes/questions');
     } catch (err) {
       console.error('Failed to create question:', err);
       setError(err);
@@ -106,7 +106,7 @@ export default function NewQuestionPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
         <Button asChild variant="ghost" className="mr-4">
-          <Link href="/mcqs/questions">
+          <Link href="/quizzes/questions">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Questions
           </Link>
@@ -114,7 +114,7 @@ export default function NewQuestionPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Question</h1>
       </div>
 
-      {error && <ErrorAlert error={error} className="mb-6" />}
+      {error && <ErrorAlert error={error}/>}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
         <form onSubmit={handleSubmit}>
