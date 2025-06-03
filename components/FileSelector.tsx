@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { filesService } from '@/services/files';
 import { FileRead } from '@/types/files';
 import { formatFileSize, formatFileDate, getFileTypeIcon } from '@/lib/file-utils';

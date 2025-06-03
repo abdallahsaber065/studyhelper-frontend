@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { filesService } from '@/services/files';
 import { FileRead, UserFileAccessRead, FileShareRequest } from '@/types/files';
 import { formatFileDate } from '@/lib/file-utils';

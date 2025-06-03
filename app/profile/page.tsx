@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import { ArrowLeft, Save, User, Mail, Calendar, Shield, Loader2, CheckCircle, Key, Eye, EyeOff, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { apiKeysService, ApiKeyRead } from '@/services/api-keys';
@@ -313,7 +313,8 @@ export default function ProfilePage() {
             {success && (
               <div className="mb-4">
                 <ErrorAlert 
-                  error={success}
+                  message={success}
+                  variant="success"
                   dismissible 
                   onDismiss={() => setSuccess('')}
                 />
@@ -510,7 +511,8 @@ export default function ProfilePage() {
             {apiKeyError && (
               <div className="mb-4">
                 <ErrorAlert 
-                  error={apiKeyError}
+                  message={apiKeyError}
+                  variant="error"
                   dismissible 
                   onDismiss={() => setApiKeyError('')}
                 />
@@ -520,7 +522,8 @@ export default function ProfilePage() {
             {apiKeySuccess && (
               <div className="mb-4">
                 <ErrorAlert 
-                  error={apiKeySuccess}
+                  message={apiKeySuccess}
+                  variant="success"
                   dismissible 
                   onDismiss={() => setApiKeySuccess('')}
                 />

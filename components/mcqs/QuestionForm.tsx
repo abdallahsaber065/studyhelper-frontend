@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { mcqsService } from '@/services/mcqs';
 import { DifficultyLevelEnum, CorrectAnswerEnum, QuestionTagRead } from '@/types/mcqs';
 import { Loader2, Save, X } from 'lucide-react';

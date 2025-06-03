@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { filesService } from '@/services/files';
 import { validateFile, formatFileSize, createFileDropValidator } from '@/lib/file-utils';
 import { MAX_FILE_SIZE, ALLOWED_FILE_EXTENSIONS } from '@/types/files';

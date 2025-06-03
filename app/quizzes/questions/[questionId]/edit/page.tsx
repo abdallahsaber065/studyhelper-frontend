@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import { mcqsService } from '@/services/mcqs';
 import { DifficultyLevelEnum, CorrectAnswerEnum, QuestionTagRead } from '@/types/mcqs';

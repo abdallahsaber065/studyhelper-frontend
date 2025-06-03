@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import FileList from '@/components/files/FileList';
 import FileShareModal from '@/components/files/FileShareModal';

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { useProtectedRoute } from '@/hooks/useAuth';
 import { mcqsService } from '@/services/mcqs';
 import { McqQuestionRead, QuestionTagRead, DifficultyLevelEnum } from '@/types/mcqs';

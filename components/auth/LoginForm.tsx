@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { ErrorAlert } from '@/components/ui/alert';
 import { ActivationBanner } from '@/components/ui/activation-banner';
 import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
