@@ -27,7 +27,15 @@ import {
   Home,
   Tag,
   Edit,
-  Trash2
+  Trash2,
+  Sparkles,
+  BarChart3,
+  ArrowUpDown,
+  Info,
+  Bookmark,
+  Star,
+  BrainCircuit,
+  Check
 } from 'lucide-react';
 import {
   Dialog,
@@ -38,6 +46,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { WelcomeDialog } from '@/components/ui/welcome-dialog';
 
 export default function QuizzesPage() {
   const router = useRouter();
@@ -49,12 +64,18 @@ export default function QuizzesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [activeSessions, setActiveSessions] = useState<Map<number, QuizSessionRead>>(new Map());
+  const [stats, setStats] = useState({
+    totalQuizzes: 0,
+    inProgress: 0,
+    completed: 0
+  });
 
   // Filters
   const [showMyQuizzes, setShowMyQuizzes] = useState(false);
   const [showPublicQuizzes, setShowPublicQuizzes] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevelEnum | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOption, setSortOption] = useState<string>('newest');
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -101,7 +122,27 @@ export default function QuizzesPage() {
           )
           : filteredData;
 
-        setQuizzes(searchedData);
+        // Sort quizzes based on selected option
+        const sortedData = [...searchedData].sort((a, b) => {
+          switch (sortOption) {
+            case 'newest':
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            case 'oldest':
+              return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            case 'title-asc':
+              return a.title.localeCompare(b.title);
+            case 'title-desc':
+              return b.title.localeCompare(a.title);
+            case 'questions-desc':
+              return b.question_count - a.question_count;
+            case 'questions-asc':
+              return a.question_count - b.question_count;
+            default:
+              return 0;
+          }
+        });
+
+        setQuizzes(sortedData);
 
         // For pagination
         setTotalPages(Math.max(1, Math.ceil(searchedData.length / limit)));
@@ -109,14 +150,26 @@ export default function QuizzesPage() {
         // Also fetch active sessions for these quizzes
         const sessions = await mcqsService.getUserSessions();
         const activeSessionsMap = new Map<number, QuizSessionRead>();
+        let inProgressCount = 0;
+        let completedCount = 0;
 
         sessions.forEach(session => {
           if (!session.completed_at) {
             activeSessionsMap.set(session.quiz_id, session);
+            inProgressCount++;
+          } else {
+            completedCount++;
           }
         });
 
         setActiveSessions(activeSessionsMap);
+
+        // Update stats
+        setStats({
+          totalQuizzes: data.length,
+          inProgress: inProgressCount,
+          completed: completedCount
+        });
       } catch (err) {
         console.error('Failed to fetch quizzes:', err);
         setError(err);
@@ -126,7 +179,7 @@ export default function QuizzesPage() {
     };
 
     fetchQuizzes();
-  }, [page, limit, showMyQuizzes, showPublicQuizzes, selectedDifficulty, searchQuery]);
+  }, [page, limit, showMyQuizzes, showPublicQuizzes, selectedDifficulty, searchQuery, sortOption]);
 
   // Clear all filters
   const clearFilters = () => {
@@ -134,6 +187,7 @@ export default function QuizzesPage() {
     setShowPublicQuizzes(false);
     setSelectedDifficulty(null);
     setSearchQuery('');
+    setSortOption('newest');
     setPage(1);
   };
 
@@ -190,20 +244,26 @@ export default function QuizzesPage() {
   // Render difficulty badge with appropriate color
   const renderDifficultyBadge = (difficulty: DifficultyLevelEnum) => {
     let colorClass = '';
+    let icon = null;
+
     switch (difficulty) {
       case 'Easy':
         colorClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        icon = <Sparkles className="w-3 h-3 mr-1" />;
         break;
       case 'Medium':
         colorClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+        icon = <BarChart3 className="w-3 h-3 mr-1" />;
         break;
       case 'Hard':
         colorClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        icon = <BrainCircuit className="w-3 h-3 mr-1" />;
         break;
     }
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+        {icon}
         {difficulty}
       </span>
     );
@@ -266,6 +326,9 @@ export default function QuizzesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Welcome Dialog for first-time users */}
+      <WelcomeDialog id="quizzes-main" />
+
       {/* Breadcrumb Navigation */}
       <Breadcrumb
         items={[
@@ -281,6 +344,7 @@ export default function QuizzesPage() {
         ]}
       />
 
+      {/* Header with Quick Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quizzes</h1>
@@ -288,42 +352,97 @@ export default function QuizzesPage() {
             Create and manage your quizzes for MCQ practice
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
-          <Button asChild variant="outline">
-            <Link href="/quizzes/questions" className="flex items-center">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Manage Questions
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/quizzes/sessions" className="flex items-center">
-              <Clock className="w-4 h-4 mr-2" />
-              Quiz History
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/quizzes/generate" className="flex items-center">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Generate Quiz
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/quizzes/new" className="flex items-center">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Manually
-            </Link>
-          </Button>
-        </div>
       </div>
 
       {error && <ErrorAlert error={error} />}
+
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-blue-100 dark:border-blue-900/30">
+          <div className="flex items-center">
+            <div className="rounded-full p-3 bg-blue-100 dark:bg-blue-900/30">
+              <ListChecks className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Quizzes</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.totalQuizzes}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-amber-100 dark:border-amber-900/30">
+          <div className="flex items-center">
+            <div className="rounded-full p-3 bg-amber-100 dark:bg-amber-900/30">
+              <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">In Progress</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.inProgress}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-green-100 dark:border-green-900/30">
+          <div className="flex items-center">
+            <div className="rounded-full p-3 bg-green-100 dark:bg-green-900/30">
+              <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.completed}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Bar */}
+      <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-4 mb-6 border border-blue-100 dark:border-blue-900/20">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-lg font-medium text-blue-800 dark:text-blue-300 flex items-center">
+            <Sparkles className="mr-2 h-5 w-5" />
+            Quick Actions
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="bg-white dark:bg-gray-800">
+              <Link href="/quizzes/questions">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Questions
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="bg-white dark:bg-gray-800">
+              <Link href="/quizzes/sessions">
+                <Clock className="w-4 h-4 mr-2" />
+                History
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="bg-white dark:bg-gray-800">
+              <Link href="/quizzes/tags">
+                <Tag className="w-4 h-4 mr-2" />
+                Tags
+              </Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/quizzes/generate">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Generate Quiz
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/quizzes/new">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Quiz
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Search and Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
         <div className="flex items-center mb-4">
           <Filter className="w-5 h-5 mr-2 text-gray-400" />
           <h2 className="text-lg font-medium text-gray-900 dark:text-white">Search & Filters</h2>
-          {(showMyQuizzes || showPublicQuizzes || selectedDifficulty || searchQuery) && (
+          {(showMyQuizzes || showPublicQuizzes || selectedDifficulty || searchQuery || sortOption !== 'newest') && (
             <Button
               variant="ghost"
               size="sm"
@@ -351,7 +470,7 @@ export default function QuizzesPage() {
           </div>
         </form>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Quiz Type Filter */}
           <div className="flex flex-col space-y-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quiz Type</span>
@@ -393,30 +512,50 @@ export default function QuizzesPage() {
               <option value="Hard">Hard</option>
             </select>
           </div>
+
+          {/* Sort Order */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 items-center">
+              <ArrowUpDown className="w-4 h-4 mr-1" />
+              Sort By
+            </label>
+            <select
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              value={sortOption}
+              onChange={e => setSortOption(e.target.value)}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="title-asc">Title (A-Z)</option>
+              <option value="title-desc">Title (Z-A)</option>
+              <option value="questions-desc">Most Questions</option>
+              <option value="questions-asc">Fewest Questions</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Quizzes List */}
       {quizzes.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
-            <ListChecks className="w-8 h-8 text-gray-500 dark:text-gray-400" />
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center shadow-sm">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
+            <ListChecks className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">No quizzes found</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">
+          <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
             {showMyQuizzes || showPublicQuizzes || selectedDifficulty || searchQuery
               ? 'Try changing your filters or create your own quiz.'
-              : 'Get started by creating your first quiz.'}
+              : 'Get started by creating your first quiz or generating one from your files.'}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button asChild variant="outline">
-              <Link href="/quizzes/generate" className="flex items-center">
+            <Button asChild variant="outline" className="flex items-center">
+              <Link href="/quizzes/generate">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Generate from Files
               </Link>
             </Button>
-            <Button asChild>
-              <Link href="/quizzes/new" className="flex items-center">
+            <Button asChild className="flex items-center">
+              <Link href="/quizzes/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Manually
               </Link>
@@ -427,60 +566,98 @@ export default function QuizzesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {quizzes.map(quiz => {
             const hasActiveSession = activeSessions.has(quiz.id);
+            const isUserQuiz = user && quiz.user_id === parseInt(user.id);
 
             return (
               <div
                 key={quiz.id}
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full"
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1 flex flex-col h-full"
               >
-                <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                   <div className="flex items-center">
-                    <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
-                    <h3 className="font-medium text-gray-900 dark:text-white">Quiz</h3>
+                    <div className="rounded-full p-2 bg-blue-100 dark:bg-blue-900/30">
+                      <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 className="font-medium text-gray-900 dark:text-white ml-2">Quiz</h3>
                   </div>
                   <div className="flex items-center space-x-2">
                     {renderDifficultyBadge(quiz.difficulty_level)}
+                    {isUserQuiz && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                              <Bookmark className="w-3 h-3 mr-1" />
+                              Mine
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>You created this quiz</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     {quiz.is_public && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                        Public
-                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                              <Users className="w-3 h-3 mr-1" />
+                              Public
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>This quiz is public and can be accessed by anyone</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     {hasActiveSession && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                        <Clock className="w-3 h-3 mr-1" />
-                        In Progress
-                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Active
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>You have an active session for this quiz</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                 </div>
 
                 <div className="p-5 flex-grow">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                     {quiz.title}
                   </h2>
                   {quiz.description && (
-                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 text-sm">
                       {quiz.description}
                     </p>
                   )}
 
-                  <div className="mt-4 flex space-x-3">
+                  <div className="mt-4 flex flex-wrap gap-y-2 gap-x-3">
                     <div className="inline-flex items-center text-gray-600 dark:text-gray-400 text-sm">
-                      <ListChecks className="w-4 h-4 mr-1" />
+                      <ListChecks className="w-4 h-4 mr-1 text-blue-500" />
                       <span>{quiz.question_count} questions</span>
                     </div>
                     <div className="inline-flex items-center text-gray-600 dark:text-gray-400 text-sm">
-                      <CalendarClock className="w-4 h-4 mr-1" />
+                      <CalendarClock className="w-4 h-4 mr-1 text-blue-500" />
                       <span>{new Date(quiz.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                  <div className="flex space-x-3">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       onClick={() => startQuizSession(quiz.id)}
                       className="flex-1 flex items-center justify-center"
+                      size="sm"
                     >
                       {hasActiveSession ? (
                         <>
@@ -494,32 +671,64 @@ export default function QuizzesPage() {
                         </>
                       )}
                     </Button>
-                    <Button asChild variant="outline" className="flex items-center justify-center">
-                      <Link href={`/quizzes/${quiz.id}`}>
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                    </Button>
 
-                    {/* Show edit/delete buttons for user's own quizzes */}
-                    {user && quiz.user_id === parseInt(user.id) && (
-                      <>
-                        <Button asChild variant="outline" className="flex items-center justify-center">
-                          <Link href={`/quizzes/${quiz.id}/edit`}>
-                            <Edit className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="flex items-center justify-center text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            confirmDelete(quiz);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
+                    <div className="flex gap-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button asChild variant="outline" size="icon" className="h-9 w-9">
+                              <Link href={`/quizzes/${quiz.id}`}>
+                                <Eye className="w-4 h-4" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View quiz details</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      {/* Show edit/delete buttons for user's own quizzes */}
+                      {isUserQuiz && (
+                        <>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button asChild variant="outline" size="icon" className="h-9 w-9">
+                                  <Link href={`/quizzes/${quiz.id}/edit`}>
+                                    <Edit className="w-4 h-4" />
+                                  </Link>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit quiz</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-9 w-9 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    confirmDelete(quiz);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Delete quiz</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
