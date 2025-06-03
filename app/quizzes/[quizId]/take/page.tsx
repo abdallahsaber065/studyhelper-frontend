@@ -98,40 +98,50 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
 
               const answers: { [key: number]: string } = {};
 
-              // Handle different formats of answers_json
-              if (Array.isArray(sessionData.answers_json)) {
-                // If it's already an array, use forEach as intended
-                sessionData.answers_json.forEach((answer: any) => {
-                  answers[answer.question_id] = answer.selected_option;
-                });
-              } else if (typeof sessionData.answers_json === 'object') {
-                // If it's an object, try to extract data differently
-                try {
-                  // It might be a JSON string that needs parsing
-                  const parsedAnswers = typeof sessionData.answers_json === 'string'
-                    ? JSON.parse(sessionData.answers_json)
-                    : sessionData.answers_json;
+              // Handle the specific format provided in the example:
+              // {
+              //   "375": { "correct": null, "selected": "C", "is_correct": null },
+              //   "376": { "correct": null, "selected": "B", "is_correct": null }
+              // }
+              try {
+                const parsedAnswers = typeof sessionData.answers_json === 'string'
+                  ? JSON.parse(sessionData.answers_json)
+                  : sessionData.answers_json;
 
-                  // Handle if parsedAnswers is an array
+                // New format: keys are question IDs, values have a "selected" property
+                Object.entries(parsedAnswers).forEach(([questionId, data]: [string, any]) => {
+                  const qId = parseInt(questionId, 10);
+                  if (!isNaN(qId) && data && data.selected) {
+                    answers[qId] = data.selected;
+                  }
+                });
+
+                // Fallback to previous formats if needed
+                if (Object.keys(answers).length === 0) {
+                  // Handle array format
                   if (Array.isArray(parsedAnswers)) {
                     parsedAnswers.forEach((answer: any) => {
-                      answers[answer.question_id] = answer.selected_option;
+                      if (answer.question_id && answer.selected_option) {
+                        answers[answer.question_id] = answer.selected_option;
+                      }
                     });
-                  } else {
-                    // If it's an object with question_id keys
+                  } else if (typeof parsedAnswers === 'object') {
+                    // Legacy format handling
                     Object.entries(parsedAnswers).forEach(([key, value]: [string, any]) => {
-                      const questionId = parseInt(key, 10);
-                      if (!isNaN(questionId) && value?.selected_option) {
-                        answers[questionId] = value.selected_option;
+                      const qId = parseInt(key, 10);
+                      if (!isNaN(qId)) {
+                        if (value?.selected_option) {
+                          answers[qId] = value.selected_option;
+                        }
                       }
                     });
                   }
-                } catch (e) {
-                  console.error('Error parsing answers_json:', e);
                 }
-              }
 
-              setUserAnswers(answers);
+                setUserAnswers(answers);
+              } catch (e) {
+                console.error('Error parsing answers_json:', e);
+              }
             }
           } catch (sessionErr) {
             console.error('Failed to fetch session:', sessionErr);
