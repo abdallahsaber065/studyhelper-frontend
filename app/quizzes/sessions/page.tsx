@@ -132,11 +132,6 @@ export default function QuizSessionsPage() {
       <Breadcrumb
         items={[
           {
-            label: 'MCQs',
-            href: '/quizzes/questions',
-            icon: <BookOpen className="w-4 h-4" />
-          },
-          {
             label: 'Quizzes',
             href: '/quizzes',
             icon: <ListChecks className="w-4 h-4" />

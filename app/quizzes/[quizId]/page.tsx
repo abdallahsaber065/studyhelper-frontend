@@ -52,13 +52,17 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
   const [deleting, setDeleting] = useState(false);
   const { quizId } = use(params);
   const parsedQuizId = parseInt(quizId, 10);
-  // Load quiz details
+  // Add a state to store user's attempts
+  const [attempts, setAttempts] = useState<QuizSessionRead[]>([]);
+  const [loadingAttempts, setLoadingAttempts] = useState(false);
+
+  // Load quiz details and user attempts
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
         setLoading(true);
         setError(null);
-        // Convert params.quizId to a num ber safely
+        // Convert params.quizId to a number safely
         if (isNaN(parsedQuizId)) {
           throw new Error("Invalid quiz ID");
         }
@@ -68,6 +72,13 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
         // Check for active session for this quiz
         const session = await mcqsService.getActiveSessionForQuiz(parsedQuizId);
         setActiveSession(session);
+
+        // Fetch user's attempts for this quiz
+        setLoadingAttempts(true);
+        const sessions = await mcqsService.getUserSessions();
+        const quizAttempts = sessions.filter(s => s.quiz_id === parsedQuizId);
+        setAttempts(quizAttempts);
+        setLoadingAttempts(false);
       } catch (err) {
         console.error('Failed to fetch quiz:', err);
         setError(err);
@@ -214,11 +225,6 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
       <Breadcrumb
         items={[
           {
-            label: 'MCQs',
-            href: '/quizzes/questions',
-            icon: <BookOpen className="w-4 h-4" />
-          },
-          {
             label: 'Quizzes',
             href: '/quizzes',
             icon: <ListChecks className="w-4 h-4" />
@@ -337,6 +343,87 @@ export default function QuizDetailsPage({ params }: { params: Promise<{ quizId: 
               </Button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* User Attempts Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mt-6">
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+            <ListChecks className="w-5 h-5 mr-2 text-blue-500" />
+            Your Attempts
+          </h2>
+        </div>
+
+        <div className="px-6 py-4">
+          {loadingAttempts ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : attempts.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-gray-500 dark:text-gray-400">You haven't attempted this quiz yet.</p>
+              <Button onClick={startQuizSession} className="mt-4">
+                <Play className="w-4 h-4 mr-2" />
+                Start Quiz
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {attempts.map((attempt) => (
+                <div key={attempt.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div>
+                    <div className="flex items-center mb-1">
+                      <CalendarClock className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {new Date(attempt.started_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      {attempt.completed_at ? (
+                        <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                      ) : (
+                        <Clock className="w-4 h-4 mr-2 text-amber-500" />
+                      )}
+                      <span className="text-sm font-medium">
+                        {attempt.completed_at ? 'Completed' : 'In Progress'}
+                        {attempt.score !== null && attempt.score !== undefined && attempt.completed_at && attempt.total_questions && (
+                          <span className="ml-2 text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-0.5 rounded-full">
+                            Score: {Math.round((attempt.score / attempt.total_questions) * 100)}%
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (attempt.completed_at) {
+                        // View results
+                        router.push(`/quizzes/${quiz.id}/take?session=${attempt.id}`);
+                      } else {
+                        // Continue session
+                        router.push(`/quizzes/${quiz.id}/take?session=${attempt.id}`);
+                      }
+                    }}
+                  >
+                    {attempt.completed_at ? (
+                      <>
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Results
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-4 h-4 mr-2" />
+                        Continue
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

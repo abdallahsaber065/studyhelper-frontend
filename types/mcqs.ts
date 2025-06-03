@@ -60,6 +60,7 @@ export interface QuizSessionRead {
   id: number;
   user_id: number;
   quiz_id: number;
+  quiz_title: string;
   started_at: string;
   completed_at?: string;
   score?: number;

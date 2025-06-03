@@ -186,7 +186,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
     }));
   };
 
-  // Save quiz progress and mark as complete
+  // Save quiz progress without marking as complete
   const saveProgress = async () => {
     if (!session) return;
 
@@ -194,27 +194,22 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       setSaving(true);
       setError(null);
 
-      // Update the session with current answers AND mark it as complete
-      await mcqsService.submitSession(session.id, userAnswers);
+      // Update the session with current answers but don't mark as complete
+      await mcqsService.updateSession(session.id, userAnswers);
 
       // Show success message with toast
       toast({
-        title: "Quiz completed",
-        description: "Your quiz has been marked as complete.",
+        title: "Progress saved",
+        description: "Your progress has been saved successfully.",
         variant: "success",
       });
-
-      // Redirect back to quizzes page after completion
-      setTimeout(() => {
-        router.push('/quizzes');
-      }, 1500);
     } catch (err) {
-      console.error('Failed to complete quiz:', err);
+      console.error('Failed to save progress:', err);
       setError(err);
 
       toast({
-        title: "Failed to complete quiz",
-        description: "There was an error marking your quiz as complete. Please try again.",
+        title: "Failed to save progress",
+        description: "There was an error saving your progress. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -762,7 +757,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                     ) : (
                       <>
                         <Check className="w-4 h-4 mr-2" />
-                        Mark Complete
+                        Save Progress
                       </>
                     )}
                   </Button>
