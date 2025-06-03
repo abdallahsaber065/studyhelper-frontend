@@ -1,5 +1,5 @@
 import apiClient from '@/lib/api-client';
-import { McqQuizRead, QuizSessionRead } from '@/types/mcqs';
+import { QuizGenerationResponse, McqQuizRead, QuizSessionRead } from '@/types/mcqs';
 
 class QuizzesService {
     // Quizzes
@@ -30,7 +30,7 @@ class QuizzesService {
 
     // Generate Quizzes
     async generateQuiz(generationData: any) {
-        const response = await apiClient.post<McqQuizRead>('/quizzes/generate', generationData);
+        const response = await apiClient.post<QuizGenerationResponse>('/quizzes/generate', generationData);
         return response.data;
     }
 

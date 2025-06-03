@@ -62,6 +62,9 @@ module.exports = {
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
+        'pulse-subtle': 'pulseSubtle 3s infinite ease-in-out',
+        'slide-left': 'slideLeft 0.3s ease-out',
+        'slide-right': 'slideRight 0.3s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -71,6 +74,18 @@ module.exports = {
         slideUp: {
           from: { transform: 'translateY(20px)', opacity: '0' },
           to: { transform: 'translateY(0)', opacity: '1' },
+        },
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
+        },
+        slideLeft: {
+          from: { transform: 'translateX(-20px)', opacity: '0' },
+          to: { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideRight: {
+          from: { transform: 'translateX(20px)', opacity: '0' },
+          to: { transform: 'translateX(0)', opacity: '1' },
         },
       },
     },

@@ -45,13 +45,10 @@ export default function GenerateMCQsPage() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [difficultyLevel, setDifficultyLevel] = useState<DifficultyLevelEnum>("Medium");
   const [customInstructions, setCustomInstructions] = useState('');
-  const [createQuiz, setCreateQuiz] = useState(true);
   const [quizTitle, setQuizTitle] = useState('');
   const [quizDescription, setQuizDescription] = useState('');
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationSuccess, setGenerationSuccess] = useState(false);
-  const [generatedQuizId, setGeneratedQuizId] = useState<number | null>(null);
   const [error, setError] = useState<any>(null);
   const [showLoading, setShowLoading] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0); // 0-100
@@ -103,14 +100,12 @@ export default function GenerateMCQsPage() {
           return newProgress >= 95 ? 95 : newProgress;
         });
       }, 1000);
-    } else if (generationSuccess) {
-      setGenerationProgress(100);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isGenerating, generationSuccess]);
+  }, [isGenerating]);
 
   const handleGenerateMCQs = async () => {
     if (selectedFileIds.length === 0) {
@@ -127,21 +122,22 @@ export default function GenerateMCQsPage() {
         num_questions: numQuestions,
         difficulty_level: difficultyLevel,
         custom_instructions: customInstructions || undefined,
-        create_quiz: createQuiz,
+        create_quiz: true,
         quiz_title: quizTitle || undefined,
         quiz_description: quizDescription || undefined
       });
 
-      setGenerationSuccess(true);
-
-      // Assuming the response contains the generated quiz ID
-      if (response && response.id) {
-        setGeneratedQuizId(response.id);
+      // If we have a quiz ID, redirect to it
+      if (response && response.quiz.id) {
+        router.push(`/quizzes/${response.quiz.id}`);
+      } else {
+        // If we don't get an ID for some reason, show an error
+        setError({ message: 'Failed to get quiz ID. Please try again.' });
+        setIsGenerating(false);
       }
     } catch (error) {
       console.error('Failed to generate MCQs:', error);
       setError(error);
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -242,405 +238,325 @@ export default function GenerateMCQsPage() {
             </div>
           </div>
 
-          {generationSuccess ? (
-            <div className="space-y-8">
-              {/* Success Message */}
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-green-800 dark:text-green-300 mb-2">
-                      Quiz Generated Successfully!
-                    </h3>
-                    <p className="text-green-700 dark:text-green-400">
-                      Your questions have been created{createQuiz ? ' and a quiz has been set up' : ''}.
-                      You can now view or take the quiz.
-                    </p>
-                  </div>
+          <div className="space-y-8">
+            {/* Generation Process Steps */}
+            <div className="flex items-center justify-between mb-2 px-2">
+              <div className="flex flex-col items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedFileIds.length > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                  <FileText className="w-5 h-5" />
                 </div>
+                <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">Select Files</span>
               </div>
-
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setGenerationSuccess(false);
-                    setGeneratedQuizId(null);
-                  }}
-                  className="flex-1"
-                >
-                  Generate More Quizzes
-                </Button>
-                {generatedQuizId && (
-                  <>
-                    <Button
-                      onClick={() => router.push(`/quizzes/${generatedQuizId}`)}
-                      className="flex-1"
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      View Quiz
-                    </Button>
-                    <Button
-                      onClick={() => router.push(`/quizzes/${generatedQuizId}/take`)}
-                      variant="secondary"
-                      className="flex-1"
-                    >
-                      <ListChecks className="w-4 h-4 mr-2" />
-                      Take Quiz Now
-                    </Button>
-                  </>
-                )}
+              <div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700">
+                <div className={`h-1 ${selectedFileIds.length > 0 ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} style={{ width: selectedFileIds.length > 0 ? '100%' : '0%' }}></div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${numQuestions > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">Configure</span>
+              </div>
+              <div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700">
+                <div className={`h-1 ${isGenerating ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} style={{ width: isGenerating ? '100%' : '0%' }}></div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400">
+                  <Brain className="w-5 h-5" />
+                </div>
+                <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">Generate</span>
               </div>
             </div>
-          ) : (
-            <div className="space-y-8">
-              {/* Generation Process Steps */}
-              <div className="flex items-center justify-between mb-2 px-2">
-                <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedFileIds.length > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">Select Files</span>
-                </div>
-                <div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700">
-                  <div className={`h-1 ${selectedFileIds.length > 0 ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} style={{ width: selectedFileIds.length > 0 ? '100%' : '0%' }}></div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${numQuestions > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                    <Sliders className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">Configure</span>
-                </div>
-                <div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700">
-                  <div className={`h-1 ${isGenerating || generationSuccess ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} style={{ width: isGenerating || generationSuccess ? '100%' : '0%' }}></div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${generationSuccess ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                    <Brain className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">Generate</span>
-                </div>
+
+            {/* File Selection Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div className="flex items-center mb-4">
+                <FileText className="w-5 h-5 text-blue-500 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Select Files
+                </h2>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
+                        <HelpCircle className="h-4 w-4 text-gray-400" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-sm">
+                      <p>Select up to 5 files for the AI to analyze and generate questions from. More files and varied content will result in more diverse questions.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
-              {/* File Selection Section */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <div className="flex items-center mb-4">
-                  <FileText className="w-5 h-5 text-blue-500 mr-2" />
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Select Files
-                  </h2>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
-                          <HelpCircle className="h-4 w-4 text-gray-400" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-sm">
-                        <p>Select up to 5 files for the AI to analyze and generate questions from. More files and varied content will result in more diverse questions.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-
-                <div className={`rounded-lg border ${selectedFileIds.length > 0 ? 'border-blue-200 dark:border-blue-900/50' : 'border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-900/10'} p-4 mb-4`}>
-                  {selectedFileIds.length === 0 ? (
-                    <div className="flex items-center">
-                      <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
-                      <p className="text-sm text-amber-800 dark:text-amber-400">
-                        Please select at least one file to generate questions from.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <Check className="w-5 h-5 text-green-500 mr-2" />
-                      <p className="text-sm text-green-800 dark:text-green-400">
-                        {selectedFileIds.length} {selectedFileIds.length === 1 ? 'file' : 'files'} selected
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <FileSelector
-                  selectedFileIds={selectedFileIds}
-                  initialFileIds={initialFileIds}
-                  onFileSelectionChange={setSelectedFileIds}
-                  maxFiles={5}
-                />
+              <div className={`rounded-lg border ${selectedFileIds.length > 0 ? 'border-blue-200 dark:border-blue-900/50' : 'border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-900/10'} p-4 mb-4`}>
+                {selectedFileIds.length === 0 ? (
+                  <div className="flex items-center">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
+                    <p className="text-sm text-amber-800 dark:text-amber-400">
+                      Please select at least one file to generate questions from.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <p className="text-sm text-green-800 dark:text-green-400">
+                      {selectedFileIds.length} {selectedFileIds.length === 1 ? 'file' : 'files'} selected
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* MCQ Generation Options */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <div className="flex items-center mb-4">
-                  <Sliders className="w-5 h-5 text-blue-500 mr-2" />
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Generation Options
-                  </h2>
+              <FileSelector
+                selectedFileIds={selectedFileIds}
+                initialFileIds={initialFileIds}
+                onFileSelectionChange={setSelectedFileIds}
+                maxFiles={5}
+              />
+            </div>
+
+            {/* MCQ Generation Options */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div className="flex items-center mb-4">
+                <Sliders className="w-5 h-5 text-blue-500 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Generation Options
+                </h2>
+              </div>
+
+              <div className="space-y-6">
+                {/* Number of Questions */}
+                <div className="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 items-center">
+                    Number of Questions
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
+                            <HelpCircle className="h-4 w-4 text-gray-400" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>More questions will result in more comprehensive coverage of the material but will take longer to generate.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </label>
+                  <div className="flex items-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={decrementQuestions}
+                      disabled={numQuestions <= 1}
+                      className="h-9 w-9 p-0"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <input
+                      type="number"
+                      value={numQuestions}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        if (!isNaN(value) && value >= 1 && value <= 60) {
+                          setNumQuestions(value);
+                        }
+                      }}
+                      min={1}
+                      max={60}
+                      className="w-16 h-9 mx-2 text-center border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={incrementQuestions}
+                      disabled={numQuestions >= 60}
+                      className="h-9 w-9 p-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                    <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
+                      (max: 60)
+                    </span>
+                  </div>
                 </div>
 
-                <div className="space-y-6">
-                  {/* Number of Questions */}
-                  <div className="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 items-center">
-                      Number of Questions
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
-                              <HelpCircle className="h-4 w-4 text-gray-400" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">
-                            <p>More questions will result in more comprehensive coverage of the material but will take longer to generate.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                {/* Difficulty Level */}
+                <div className="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 items-center">
+                    Difficulty Level
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
+                            <HelpCircle className="h-4 w-4 text-gray-400" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p><strong>Easy:</strong> Basic recall and understanding questions<br />
+                            <strong>Medium:</strong> Application and analysis questions<br />
+                            <strong>Hard:</strong> Evaluation and synthesis questions</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {['Easy', 'Medium', 'Hard'].map((level) => (
+                      <Button
+                        key={level}
+                        type="button"
+                        variant={difficultyLevel === level ? "default" : "outline"}
+                        className={`flex items-center justify-center ${difficultyLevel === level
+                          ? level === 'Easy'
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40'
+                            : level === 'Medium'
+                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/40'
+                              : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40'
+                          : ''
+                          }`}
+                        onClick={() => setDifficultyLevel(level as DifficultyLevelEnum)}
+                      >
+                        {renderDifficultyIcon(level as DifficultyLevelEnum)}
+                        <span className="ml-2">{level}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Instructions */}
+                <div className="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 items-center">
+                    Custom Instructions (Optional)
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
+                            <HelpCircle className="h-4 w-4 text-gray-400" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <p>Add specific requirements for the AI to consider when generating questions. For example, "Focus on concepts from chapters 3-5" or "Include questions about formulas and calculations".</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </label>
+                  <Textarea
+                    value={customInstructions}
+                    onChange={(e) => setCustomInstructions(e.target.value)}
+                    placeholder="For example: Focus on specific topics, include calculation questions, etc."
+                    className="min-h-[100px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Quiz Title & Description Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <ListChecks className="w-5 h-5 text-blue-500 mr-2" />
+                Quiz Details
+              </h2>
+
+              <div className="space-y-6">
+                <div className="space-y-4 bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Quiz Title (Optional)
                     </label>
-                    <div className="flex items-center">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={decrementQuestions}
-                        disabled={numQuestions <= 1}
-                        className="h-9 w-9 p-0"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <input
-                        type="number"
-                        value={numQuestions}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          if (!isNaN(value) && value >= 1 && value <= 60) {
-                            setNumQuestions(value);
-                          }
-                        }}
-                        min={1}
-                        max={60}
-                        className="w-16 h-9 mx-2 text-center border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={incrementQuestions}
-                        disabled={numQuestions >= 60}
-                        className="h-9 w-9 p-0"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                      <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
-                        (max: 60)
-                      </span>
-                    </div>
+                    <input
+                      type="text"
+                      value={quizTitle}
+                      onChange={(e) => setQuizTitle(e.target.value)}
+                      placeholder="Enter a title for your quiz"
+                      className="w-full h-10 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      If left blank, a title will be generated automatically based on your content.
+                    </p>
                   </div>
 
-                  {/* Difficulty Level */}
-                  <div className="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 items-center">
-                      Difficulty Level
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
-                              <HelpCircle className="h-4 w-4 text-gray-400" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">
-                            <p><strong>Easy:</strong> Basic recall and understanding questions<br />
-                              <strong>Medium:</strong> Application and analysis questions<br />
-                              <strong>Hard:</strong> Evaluation and synthesis questions</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {['Easy', 'Medium', 'Hard'].map((level) => (
-                        <Button
-                          key={level}
-                          type="button"
-                          variant={difficultyLevel === level ? "default" : "outline"}
-                          className={`flex items-center justify-center ${difficultyLevel === level
-                              ? level === 'Easy'
-                                ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40'
-                                : level === 'Medium'
-                                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/40'
-                                  : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40'
-                              : ''
-                            }`}
-                          onClick={() => setDifficultyLevel(level as DifficultyLevelEnum)}
-                        >
-                          {renderDifficultyIcon(level as DifficultyLevelEnum)}
-                          <span className="ml-2">{level}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom Instructions */}
-                  <div className="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 items-center">
-                      Custom Instructions (Optional)
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="ml-2 h-6 w-6">
-                              <HelpCircle className="h-4 w-4 text-gray-400" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-xs">
-                            <p>Add specific requirements for the AI to consider when generating questions. For example, "Focus on concepts from chapters 3-5" or "Include questions about formulas and calculations".</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Quiz Description (Optional)
                     </label>
                     <Textarea
-                      value={customInstructions}
-                      onChange={(e) => setCustomInstructions(e.target.value)}
-                      placeholder="For example: Focus on specific topics, include calculation questions, etc."
-                      className="min-h-[100px]"
+                      value={quizDescription}
+                      onChange={(e) => setQuizDescription(e.target.value)}
+                      placeholder="Enter a description for your quiz"
+                      className="min-h-[80px]"
                     />
                   </div>
                 </div>
               </div>
-
-              {/* Quiz Options */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                  <ListChecks className="w-5 h-5 text-blue-500 mr-2" />
-                  Quiz Options
-                </h2>
-
-                <div className="space-y-6">
-                  {/* Create Quiz Toggle */}
-                  <div className="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="create-quiz"
-                        checked={createQuiz}
-                        onChange={() => setCreateQuiz(prev => !prev)}
-                        className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label
-                        htmlFor="create-quiz"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Create a quiz from generated questions
-                      </label>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 ml-7">
-                      If unchecked, questions will be generated but not organized into a quiz.
-                    </p>
-                  </div>
-
-                  {/* Quiz Title & Description (only shown if creating quiz) */}
-                  {createQuiz && (
-                    <div className="space-y-4 bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Quiz Title (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={quizTitle}
-                          onChange={(e) => setQuizTitle(e.target.value)}
-                          placeholder="Enter a title for your quiz"
-                          className="w-full h-10 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                        />
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          If left blank, a title will be generated automatically based on your content.
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Quiz Description (Optional)
-                        </label>
-                        <Textarea
-                          value={quizDescription}
-                          onChange={(e) => setQuizDescription(e.target.value)}
-                          placeholder="Enter a description for your quiz"
-                          className="min-h-[80px]"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Estimated Time Info */}
-              {selectedFileIds.length > 0 && !isGenerating && (
-                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <Info className="h-5 w-5 text-blue-500 mr-2" />
-                    <p className="text-sm text-blue-700 dark:text-blue-400">
-                      Estimated generation time: <span className="font-medium">{estimatedTime} seconds</span> for {numQuestions} {numQuestions === 1 ? 'question' : 'questions'} from {selectedFileIds.length} {selectedFileIds.length === 1 ? 'file' : 'files'}.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Generation Progress */}
-              {isGenerating && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                    <Brain className="w-5 h-5 text-blue-500 mr-2 animate-pulse" />
-                    Generating Quiz
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                      <div
-                        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                        style={{ width: `${generationProgress}%` }}
-                      ></div>
-                    </div>
-
-                    <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-                      Analyzing content and creating {numQuestions} {difficultyLevel.toLowerCase()}-level questions...
-                    </p>
-
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex justify-end space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push('/quizzes')}
-                  disabled={isGenerating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleGenerateMCQs}
-                  disabled={selectedFileIds.length === 0 || isGenerating}
-                  className="min-w-[160px]"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Brain className="w-4 h-4 mr-2" />
-                      Generate Quiz
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
-          )}
+
+            {/* Estimated Time Info */}
+            {selectedFileIds.length > 0 && !isGenerating && (
+              <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-center">
+                  <Info className="h-5 w-5 text-blue-500 mr-2" />
+                  <p className="text-sm text-blue-700 dark:text-blue-400">
+                    Estimated generation time: <span className="font-medium">{estimatedTime} seconds</span> for {numQuestions} {numQuestions === 1 ? 'question' : 'questions'} from {selectedFileIds.length} {selectedFileIds.length === 1 ? 'file' : 'files'}.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Generation Progress */}
+            {isGenerating && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                  <Brain className="w-5 h-5 text-blue-500 mr-2 animate-pulse" />
+                  Generating Quiz
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                      style={{ width: `${generationProgress}%` }}
+                    ></div>
+                  </div>
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                    Analyzing content and creating {numQuestions} {difficultyLevel.toLowerCase()}-level questions...
+                  </p>
+
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end space-x-4">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/quizzes')}
+                disabled={isGenerating}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleGenerateMCQs}
+                disabled={selectedFileIds.length === 0 || isGenerating}
+                className="min-w-[160px]"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4 mr-2" />
+                    Generate Quiz
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -71,8 +71,7 @@ export default function QuizzesPage() {
   });
 
   // Filters
-  const [showMyQuizzes, setShowMyQuizzes] = useState(false);
-  const [showPublicQuizzes, setShowPublicQuizzes] = useState(false);
+  const [showMyQuizzes, setShowMyQuizzes] = useState(true);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevelEnum | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<string>('newest');
@@ -105,7 +104,6 @@ export default function QuizzesPage() {
         };
 
         if (showMyQuizzes) params.my_quizzes = true;
-        if (showPublicQuizzes) params.is_public = true;
 
         const data = await mcqsService.getQuizzes(params);
 
@@ -179,12 +177,11 @@ export default function QuizzesPage() {
     };
 
     fetchQuizzes();
-  }, [page, limit, showMyQuizzes, showPublicQuizzes, selectedDifficulty, searchQuery, sortOption]);
+  }, [page, limit, showMyQuizzes, selectedDifficulty, searchQuery, sortOption]);
 
   // Clear all filters
   const clearFilters = () => {
-    setShowMyQuizzes(false);
-    setShowPublicQuizzes(false);
+    setShowMyQuizzes(true);
     setSelectedDifficulty(null);
     setSearchQuery('');
     setSortOption('newest');
@@ -333,11 +330,6 @@ export default function QuizzesPage() {
       <Breadcrumb
         items={[
           {
-            label: 'Home',
-            href: '/dashboard',
-            icon: <Home className="w-4 h-4" />
-          },
-          {
             label: 'Quizzes',
             icon: <ListChecks className="w-4 h-4" />
           }
@@ -442,7 +434,7 @@ export default function QuizzesPage() {
         <div className="flex items-center mb-4">
           <Filter className="w-5 h-5 mr-2 text-gray-400" />
           <h2 className="text-lg font-medium text-gray-900 dark:text-white">Search & Filters</h2>
-          {(showMyQuizzes || showPublicQuizzes || selectedDifficulty || searchQuery || sortOption !== 'newest') && (
+          {(showMyQuizzes || selectedDifficulty || searchQuery || sortOption !== 'newest') && (
             <Button
               variant="ghost"
               size="sm"
@@ -474,7 +466,7 @@ export default function QuizzesPage() {
           {/* Quiz Type Filter */}
           <div className="flex flex-col space-y-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quiz Type</span>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -482,16 +474,7 @@ export default function QuizzesPage() {
                   checked={showMyQuizzes}
                   onChange={() => setShowMyQuizzes(!showMyQuizzes)}
                 />
-                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">My Quizzes</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="form-checkbox h-5 w-5 text-blue-600 dark:text-blue-500"
-                  checked={showPublicQuizzes}
-                  onChange={() => setShowPublicQuizzes(!showPublicQuizzes)}
-                />
-                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Public Quizzes</span>
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">My Quizzes Only</span>
               </label>
             </div>
           </div>
@@ -515,7 +498,7 @@ export default function QuizzesPage() {
 
           {/* Sort Order */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 items-center">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
               <ArrowUpDown className="w-4 h-4 mr-1" />
               Sort By
             </label>
@@ -543,7 +526,7 @@ export default function QuizzesPage() {
           </div>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">No quizzes found</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-            {showMyQuizzes || showPublicQuizzes || selectedDifficulty || searchQuery
+            {showMyQuizzes || selectedDifficulty || searchQuery
               ? 'Try changing your filters or create your own quiz.'
               : 'Get started by creating your first quiz or generating one from your files.'}
           </p>
@@ -593,21 +576,6 @@ export default function QuizzesPage() {
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>You created this quiz</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {quiz.is_public && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                              <Users className="w-3 h-3 mr-1" />
-                              Public
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>This quiz is public and can be accessed by anyone</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

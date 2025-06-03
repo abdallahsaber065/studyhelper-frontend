@@ -186,7 +186,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
     }));
   };
 
-  // Save quiz progress without submitting
+  // Save quiz progress and mark as complete
   const saveProgress = async () => {
     if (!session) return;
 
@@ -194,27 +194,30 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
       setSaving(true);
       setError(null);
 
-      // Update the session with current answers but don't complete it
-      await mcqsService.updateSession(session.id, userAnswers);
+      // Update the session with current answers AND mark it as complete
+      await mcqsService.submitSession(session.id, userAnswers);
 
       // Show success message with toast
       toast({
-        title: "Progress saved",
-        description: "Your quiz progress has been saved successfully.",
+        title: "Quiz completed",
+        description: "Your quiz has been marked as complete.",
         variant: "success",
       });
 
-      setSaving(false);
+      // Redirect back to quizzes page after completion
+      setTimeout(() => {
+        router.push('/quizzes');
+      }, 1500);
     } catch (err) {
-      console.error('Failed to save quiz progress:', err);
+      console.error('Failed to complete quiz:', err);
       setError(err);
 
       toast({
-        title: "Failed to save progress",
-        description: "There was an error saving your progress. Please try again.",
+        title: "Failed to complete quiz",
+        description: "There was an error marking your quiz as complete. Please try again.",
         variant: "destructive",
       });
-
+    } finally {
       setSaving(false);
     }
   };
@@ -759,7 +762,7 @@ export default function TakeQuizPage({ params }: { params: Promise<{ quizId: str
                     ) : (
                       <>
                         <Check className="w-4 h-4 mr-2" />
-                        Save Progress
+                        Mark Complete
                       </>
                     )}
                   </Button>

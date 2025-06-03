@@ -75,4 +75,37 @@ export interface QuizSessionAnswer {
 
 export interface QuizSessionSubmit {
   answers: QuizSessionAnswer[];
-} 
+}
+
+export interface QuizGenerationQuestion {
+  question: string;
+  options: Record<string, string>;
+  correct_answer: string;
+  explanation: string;
+  hint?: string;
+  difficulty: string;
+  category?: string;
+}
+
+export interface QuizGenerationSet {
+  title: string;
+  description?: string;
+  questions: QuizGenerationQuestion[];
+  tags?: string[];
+  difficulty_level: DifficultyLevelEnum | string;
+}
+
+export interface QuizGenerationQuizSummary {
+  id: number;
+  title: string;
+  description?: string;
+  question_count: number;
+}
+
+export interface QuizGenerationResponse {
+  message: string;
+  questions_created: number;
+  question_ids: number[];
+  generated_mcq_set: QuizGenerationSet;
+  quiz: QuizGenerationQuizSummary;
+}
