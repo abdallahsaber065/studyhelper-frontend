@@ -1,7 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { Upload, Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FileUploadModal } from "@/components/files/FileUploadModal";
+import { FileTable } from "@/components/files/FileTable";
 
 export const FilesPage: React.FC = () => {
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -12,47 +19,38 @@ export const FilesPage: React.FC = () => {
             Manage your uploaded documents and study materials.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-          <Upload className="h-4 w-4" />
+        <Button onClick={() => setShowUploadModal(true)}>
+          <Upload className="h-4 w-4 mr-2" />
           Upload File
-        </button>
+        </Button>
       </div>
 
       {/* Search and filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <Input
             type="text"
             placeholder="Search files..."
-            className="w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
           />
         </div>
-        <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
-          <Filter className="h-4 w-4" />
+        <Button variant="outline">
+          <Filter className="h-4 w-4 mr-2" />
           Filters
-        </button>
+        </Button>
       </div>
 
       {/* Files table */}
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="border-b p-4">
-          <h3 className="font-semibold">Your Files</h3>
-        </div>
-        <div className="p-4">
-          <div className="text-center py-8">
-            <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-2 text-sm font-semibold">No files uploaded</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Get started by uploading your first document.
-            </p>
-            <button className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-              <Upload className="h-4 w-4" />
-              Upload File
-            </button>
-          </div>
-        </div>
-      </div>
+      <FileTable searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+
+      {/* Upload modal */}
+      <FileUploadModal 
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+      />
     </div>
   );
 };
