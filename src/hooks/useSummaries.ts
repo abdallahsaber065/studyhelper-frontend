@@ -228,3 +228,13 @@ export const useSummaryAnalytics = () => {
     retry: 2,
   });
 };
+
+// Hook for available summary template types
+export const useSummaryTemplates = () => {
+  return useQuery({
+    queryKey: [...summaryQueryKeys.all, 'templates'] as const,
+    queryFn: () => summaryService.getSummaryTemplates(),
+    staleTime: 1000 * 60 * 60, // 1 hour — rarely changes
+    retry: 2,
+  });
+};

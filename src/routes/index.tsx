@@ -13,6 +13,11 @@ import {
   FilesPage,
   SummariesPage,
   QuizzesPage,
+  NotificationsPage,
+  ProfilePage,
+  SettingsPage,
+  AnalyticsPage,
+  HelpPage,
 } from '@/pages';
 
 // Protected Route component
@@ -115,6 +120,26 @@ export const router = createBrowserRouter([
         path: 'quizzes',
         element: <QuizzesPage />,
       },
+      {
+        path: 'notifications',
+        element: <NotificationsPage />,
+      },
+      {
+        path: 'profile',
+        element: <ProfilePage />,
+      },
+      {
+        path: 'settings',
+        element: <SettingsPage />,
+      },
+      {
+        path: 'analytics',
+        element: <AnalyticsPage />,
+      },
+      {
+        path: 'help',
+        element: <HelpPage />,
+      },
     ],
   },
 
@@ -134,6 +159,18 @@ export const router = createBrowserRouter([
   {
     path: '/quizzes',
     element: <Navigate to="/app/quizzes" replace />,
+  },
+  {
+    path: '/notifications',
+    element: <Navigate to="/app/notifications" replace />,
+  },
+  {
+    path: '/profile',
+    element: <Navigate to="/app/profile" replace />,
+  },
+  {
+    path: '/settings',
+    element: <Navigate to="/app/settings" replace />,
   },
 
   // Catch all route

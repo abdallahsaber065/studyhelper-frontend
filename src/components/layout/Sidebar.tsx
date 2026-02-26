@@ -30,9 +30,9 @@ const navItems: NavItem[] = [
   { to: '/app/files', icon: Upload, label: 'Files' },
   { to: '/app/summaries', icon: FileText, label: 'Summaries' },
   { to: '/app/quizzes', icon: Brain, label: 'Quizzes' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/help', icon: HelpCircle, label: 'Help' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/app/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/app/help', icon: HelpCircle, label: 'Help' },
+  { to: '/app/settings', icon: Settings, label: 'Settings' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-2 p-4">
+        <nav className="flex flex-col gap-2 overflow-y-auto p-4 pb-28">
           {navItems.map((item) => (
             <NavLink
               key={item.to}

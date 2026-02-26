@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileText, Plus, Search, Filter } from "lucide-react";
+import { FileText, Plus, Search, BarChart2, CheckCircle, Loader2, XCircle, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +12,7 @@ import {
 import { SummaryGenerationModal } from "@/components/summaries/SummaryGenerationModal";
 import { SummaryCard } from "@/components/summaries/SummaryCard";
 import { SummaryViewer } from "@/components/summaries/SummaryViewer";
-import { useSummaries } from "@/hooks/useSummaries";
+import { useSummaries, useSummaryAnalytics } from "@/hooks/useSummaries";
 import { useSummaryWebSocket } from "@/hooks/useWebSocket";
 import { Summary } from "@/services/summaryService";
 
@@ -23,6 +23,7 @@ export const SummariesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [page, setPage] = useState(1);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const { data: summariesData, isLoading, error, refetch } = useSummaries({
     page,
@@ -32,8 +33,10 @@ export const SummariesPage: React.FC = () => {
     summary_type: typeFilter || undefined,
   });
 
+  const { data: analytics } = useSummaryAnalytics();
+
   // Set up WebSocket for real-time updates
-  useSummaryWebSocket((data) => {
+  useSummaryWebSocket((_data) => {
     // Refetch summaries when receiving progress updates
     refetch();
   });
@@ -73,11 +76,43 @@ export const SummariesPage: React.FC = () => {
             AI-generated summaries from your uploaded documents.
           </p>
         </div>
-        <Button onClick={handleGenerateNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Generate Summary
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showAnalytics ? 'secondary' : 'outline'}
+            size="sm"
+            onClick={() => setShowAnalytics((v) => !v)}
+          >
+            <BarChart2 className="h-4 w-4 mr-1.5" />
+            Analytics
+          </Button>
+          <Button onClick={handleGenerateNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Generate Summary
+          </Button>
+        </div>
       </div>
+
+      {/* Analytics cards */}
+      {showAnalytics && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: 'Total Summaries', value: analytics?.total_summaries, Icon: Hash, color: 'text-primary' },
+            { label: 'Completed', value: analytics?.completed_summaries, Icon: CheckCircle, color: 'text-green-600' },
+            { label: 'Processing / Pending', value: analytics?.processing_summaries, Icon: Loader2, color: 'text-blue-600' },
+            { label: 'Failed', value: analytics?.failed_summaries, Icon: XCircle, color: 'text-red-600' },
+          ].map(({ label, value, Icon, color }) => (
+            <div key={label} className="border rounded-lg p-4 bg-card flex items-center gap-4">
+              <div className={`p-2 rounded-lg bg-muted ${color}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className="text-2xl font-bold">{value ?? '—'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Search and filters */}
       <div className="flex flex-col sm:flex-row gap-4">

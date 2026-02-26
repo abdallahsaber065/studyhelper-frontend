@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useFiles } from '@/hooks/useFiles';
-import { useGenerateSummary } from '@/hooks/useSummaries';
+import { useGenerateSummary, useSummaryTemplates } from '@/hooks/useSummaries';
 import { SummaryGenerateRequest } from '@/services/summaryService';
 import { FileMetadata, formatFileSize } from '@/services/fileService';
 
@@ -23,12 +23,11 @@ interface SummaryGenerationModalProps {
   preSelectedFileId?: string;
 }
 
-const SUMMARY_TYPES = [
-  { value: 'general', label: 'General Summary', description: 'Balanced overview of key points' },
-  { value: 'academic', label: 'Academic Summary', description: 'Detailed scholarly analysis' },
-  { value: 'technical', label: 'Technical Summary', description: 'Focus on technical details and specifications' },
-  { value: 'executive', label: 'Executive Summary', description: 'High-level business overview' },
-];
+// Helpers to derive a nice label from a template key like 'academic' → 'Academic Summary'
+const toTemplateLabel = (key: string): string => {
+  const words = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return words.includes('Summary') ? words : `${words} Summary`;
+};
 
 const AI_PROVIDERS = [
   { value: 'openai', label: 'OpenAI GPT-4', description: 'Best overall quality' },
@@ -60,14 +59,18 @@ export const SummaryGenerationModal: React.FC<SummaryGenerationModalProps> = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const { data: filesData } = useFiles({ per_page: 100 }); // Get all files for selection
+  const { data: summaryTemplates } = useSummaryTemplates();
   const generateSummary = useGenerateSummary();
+
+  // Derived template list – fall back to defaults while loading
+  const templateOptions: string[] = summaryTemplates ?? ['general', 'academic', 'technical', 'executive'];
 
   // Auto-fill title when file is selected
   useEffect(() => {
     if (formData.file_id && filesData?.files) {
       const selectedFile = filesData.files.find(f => f.id === formData.file_id);
       if (selectedFile && !formData.title) {
-        const summaryType = SUMMARY_TYPES.find(t => t.value === formData.summary_type)?.label || 'Summary';
+        const summaryType = formData.summary_type ? toTemplateLabel(formData.summary_type) : 'Summary';
         setFormData(prev => ({
           ...prev,
           title: `${summaryType} - ${selectedFile.original_filename}`,
@@ -203,12 +206,9 @@ export const SummaryGenerationModal: React.FC<SummaryGenerationModalProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SUMMARY_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div>
-                        <p className="font-medium">{type.label}</p>
-                        <p className="text-xs text-muted-foreground">{type.description}</p>
-                      </div>
+                  {templateOptions.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {toTemplateLabel(key)}
                     </SelectItem>
                   ))}
                 </SelectContent>

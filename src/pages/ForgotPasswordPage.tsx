@@ -35,7 +35,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
     if (isSubmitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 overflow-y-auto">
                 <div className="mx-auto w-full max-w-md space-y-6">
                     <div className="text-center">
                         <Link to="/" className="inline-flex items-center gap-2 text-2xl font-bold">
@@ -80,7 +80,7 @@ export const ForgotPasswordPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 overflow-y-auto">
             <div className="mx-auto w-full max-w-md space-y-6">
                 {/* Logo and header */}
                 <div className="text-center">

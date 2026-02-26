@@ -1,129 +1,161 @@
-import React from "react";
-import { Brain, Plus, Search, Play } from "lucide-react";
+import React, { useState } from 'react';
+import { Brain, Plus, Search, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useQuizzes, useQuizAnalytics } from '@/hooks/useQuizzes';
+import { QuizCard } from '@/components/quizzes/QuizCard';
+import { QuizGenerationModal } from '@/components/quizzes/QuizGenerationModal';
+import { QuizAttemptModal } from '@/components/quizzes/QuizAttemptModal';
+import type { Quiz, QuizDifficulty, QuizStatus } from '@/services/quizService';
+
+const DIFFICULTIES: QuizDifficulty[] = ['beginner', 'intermediate', 'advanced', 'expert'];
+const STATUS_OPTIONS: QuizStatus[] = ['completed', 'pending', 'processing', 'failed'];
 
 export const QuizzesPage: React.FC = () => {
+  const [search, setSearch] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState<QuizDifficulty | ''>('');
+  const [statusFilter, setStatusFilter] = useState<QuizStatus | ''>('');
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
+  const { data, isLoading, isError, error } = useQuizzes({
+    search_query: search || undefined,
+    difficulty_level: difficultyFilter ? [difficultyFilter] : undefined,
+    status: statusFilter ? [statusFilter] : undefined,
+    page_size: 30,
+  });
+
+  const { data: analytics } = useQuizAnalytics();
+
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Quizzes</h1>
           <p className="text-muted-foreground">
             Test your knowledge with AI-generated quizzes.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-          <Plus className="h-4 w-4" />
-          Create Quiz
-        </button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAnalytics(v => !v)}>
+            <BarChart3 className="mr-1.5 h-4 w-4" />
+            Analytics
+          </Button>
+          <Button onClick={() => setGenerateOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Create Quiz
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search quizzes..."
-          className="w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        />
-      </div>
-
-      {/* Quizzes grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <div className="flex items-start justify-between">
-            <Brain className="h-8 w-8 text-primary" />
-            <div className="flex gap-2">
-              <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                Medium
-              </span>
-              <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                Ready
-              </span>
+      {/* Analytics summary */}
+      {showAnalytics && analytics && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: 'Total Quizzes', value: analytics.total_quizzes },
+            { label: 'Completed', value: analytics.completed_quizzes },
+            { label: 'Total Attempts', value: analytics.total_attempts },
+            { label: 'Avg Score', value: `${analytics.average_score?.toFixed(1) ?? 0}%` },
+          ].map(stat => (
+            <div key={stat.label} className="rounded-lg border bg-card p-4 shadow-sm">
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+              <p className="mt-1 text-2xl font-bold">{stat.value}</p>
             </div>
-          </div>
-          <h3 className="mt-4 text-lg font-semibold">Python Fundamentals</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Test your understanding of Python basics including variables, functions, and control structures.
+          ))}
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-48 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search quizzes…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <select
+          value={difficultyFilter}
+          onChange={e => setDifficultyFilter(e.target.value as QuizDifficulty | '')}
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">All Difficulties</option>
+          {DIFFICULTIES.map(d => (
+            <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+          ))}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value as QuizStatus | '')}
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">All Statuses</option>
+          {STATUS_OPTIONS.map(s => (
+            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Content */}
+      {isLoading && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-lg border bg-card h-52 animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {isError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-center text-sm text-destructive">
+          {(error as Error)?.message ?? 'Failed to load quizzes.'}
+        </div>
+      )}
+
+      {!isLoading && !isError && data?.quizzes.length === 0 && (
+        <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-12 text-center">
+          <Brain className="mx-auto h-10 w-10 text-muted-foreground/50" />
+          <h3 className="mt-3 text-sm font-semibold">No quizzes yet</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Upload a file and generate your first quiz.
           </p>
-          <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-            <span>15 questions</span>
-            <span>~20 minutes</span>
-          </div>
-          <div className="mt-4 flex gap-2">
-            <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-              <Play className="h-4 w-4" />
-              Start Quiz
-            </button>
-            <button className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
-              View
-            </button>
-          </div>
+          <Button className="mt-4" size="sm" onClick={() => setGenerateOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Create Quiz
+          </Button>
         </div>
+      )}
 
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <div className="flex items-start justify-between">
-            <Brain className="h-8 w-8 text-primary" />
-            <div className="flex gap-2">
-              <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
-                Hard
-              </span>
-              <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-700">
-                Generating
-              </span>
-            </div>
+      {!isLoading && data && data.quizzes.length > 0 && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {data.quizzes.map(quiz => (
+              <QuizCard key={quiz.id} quiz={quiz} onTake={setActiveQuiz} />
+            ))}
+            <button
+              onClick={() => setGenerateOpen(true)}
+              className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 text-center hover:border-muted-foreground/50 transition-colors"
+            >
+              <Plus className="mx-auto h-7 w-7 text-muted-foreground/50" />
+              <p className="mt-2 text-sm font-medium text-muted-foreground">New Quiz</p>
+            </button>
           </div>
-          <h3 className="mt-4 text-lg font-semibold">Advanced Algorithms</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Creating quiz questions...
+          <p className="text-xs text-muted-foreground">
+            Showing {data.quizzes.length} of {data.total_count} quizzes
           </p>
-          <div className="mt-4 h-2 rounded-full bg-muted">
-            <div className="h-2 w-2/3 rounded-full bg-primary" />
-          </div>
-        </div>
+        </>
+      )}
 
-        {/* Create new quiz card */}
-        <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6">
-          <div className="text-center">
-            <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
-            <h3 className="mt-2 text-sm font-semibold">Create New Quiz</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Generate questions from your documents.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent attempts */}
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="border-b p-4">
-          <h3 className="font-semibold">Recent Quiz Attempts</h3>
-        </div>
-        <div className="p-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Python Fundamentals</p>
-                <p className="text-sm text-muted-foreground">Completed 2 days ago</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-green-600">92%</p>
-                <p className="text-sm text-muted-foreground">14/15 correct</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Data Structures Quiz</p>
-                <p className="text-sm text-muted-foreground">Completed 1 week ago</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-blue-600">78%</p>
-                <p className="text-sm text-muted-foreground">12/15 correct</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Modals */}
+      <QuizGenerationModal open={generateOpen} onClose={() => setGenerateOpen(false)} />
+      <QuizAttemptModal quiz={activeQuiz} open={!!activeQuiz} onClose={() => setActiveQuiz(null)} />
     </div>
   );
 };
+
+

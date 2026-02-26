@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Edit3, Trash2, MoreHorizontal } from 'lucide-react';
+import { FileText, Download, Edit3, Trash2, MoreHorizontal, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,8 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
   const [editingFile, setEditingFile] = useState<FileMetadata | null>(null);
   const [editDescription, setEditDescription] = useState('');
   const [deleteFile, setDeleteFile] = useState<FileMetadata | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const { data: filesData, isLoading, error } = useFiles({
     page,
@@ -47,7 +49,7 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
   const handleDownload = async (file: FileMetadata) => {
     try {
       const blob = await downloadFile.mutateAsync(file.id);
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -55,7 +57,7 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
       link.download = file.original_filename;
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
@@ -93,6 +95,34 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
     } catch (error) {
       console.error('Delete failed:', error);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await Promise.all([...selectedIds].map((id) => deleteFileMutation.mutateAsync(id)));
+      setSelectedIds(new Set());
+      setShowBulkDeleteConfirm(false);
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allSelected =
+    !!filesData?.files?.length && filesData.files.every((f) => selectedIds.has(f.id));
+
+  const toggleSelectAll = () => {
+    if (!filesData?.files) return;
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(filesData.files.map((f) => f.id)));
   };
 
   const formatDate = (dateString: string) => {
@@ -148,11 +178,40 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
 
   return (
     <>
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-2">
+          <span className="text-sm font-medium">{selectedIds.size} file{selectedIds.size !== 1 ? 's' : ''} selected</span>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+              Clear selection
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteConfirm(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete selected
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-lg border bg-card overflow-hidden">
         {/* Table Header */}
         <div className="border-b bg-muted/20 px-6 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
-            <div className="md:col-span-5">Name</div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 text-sm font-medium text-muted-foreground items-center">
+            <div className="md:col-span-1 flex items-center">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleSelectAll}
+                className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                title="Select all"
+              />
+            </div>
+            <div className="md:col-span-4">Name</div>
             <div className="md:col-span-2">Type</div>
             <div className="md:col-span-2">Size</div>
             <div className="md:col-span-2">Uploaded</div>
@@ -163,10 +222,19 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
         {/* Table Body */}
         <div className="divide-y">
           {filesData.files.map((file) => (
-            <div key={file.id} className="px-6 py-4 hover:bg-muted/20 transition-colors">
+            <div key={file.id} className={`px-6 py-4 hover:bg-muted/20 transition-colors ${selectedIds.has(file.id) ? 'bg-primary/5' : ''}`}>
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                {/* Checkbox */}
+                <div className="md:col-span-1 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(file.id)}
+                    onChange={() => toggleSelect(file.id)}
+                    className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                  />
+                </div>
                 {/* Name & Description */}
-                <div className="md:col-span-5">
+                <div className="md:col-span-4">
                   <div className="flex items-center space-x-3">
                     <div className="text-2xl">{getMimeTypeIcon(file.mime_type)}</div>
                     <div className="min-w-0 flex-1">
@@ -226,7 +294,7 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
                         Edit Description
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => setDeleteFile(file)}
                         className="text-red-600 focus:text-red-600"
                       >
@@ -300,7 +368,7 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
+              <AlertDialogAction
                 onClick={handleDeleteConfirm}
                 className="bg-red-600 hover:bg-red-700"
               >
@@ -310,6 +378,28 @@ export const FileTable: React.FC<FileTableProps> = ({ searchQuery, onSearchChang
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} files?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedIds.size} selected file{selectedIds.size !== 1 ? 's' : ''}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <CheckSquare className="mr-2 h-4 w-4" />
+              Delete {selectedIds.size} files
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, User, Bell, Menu, LogOut } from 'lucide-react';
+import { BookOpen, User, Menu, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useLogout } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { useNotificationStream } from '@/hooks/useNotificationStream';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -14,6 +16,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onMenuToggle, className }) => {
   const { user, isAuthenticated } = useAuthStore();
   const logoutMutation = useLogout();
+
+  // Activate real-time notification stream
+  useNotificationStream();
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -50,20 +55,17 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, className }) => {
           {isAuthenticated ? (
             <>
               {/* Notifications */}
-              <button className="relative p-2 hover:bg-accent hover:text-accent-foreground rounded-md">
-                <Bell className="h-5 w-5" />
-                {/* Notification badge */}
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-                  3
-                </span>
-              </button>
+              <NotificationDropdown />
 
               {/* User menu */}
               <div className="flex items-center gap-2">
-                <button className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md">
+                <Link
+                  to="/app/profile"
+                  className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md"
+                >
                   <User className="h-5 w-5" />
                   <span className="hidden sm:inline-block">{user?.email}</span>
-                </button>
+                </Link>
 
                 <Button
                   variant="ghost"

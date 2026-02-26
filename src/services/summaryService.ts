@@ -77,7 +77,7 @@ export const summaryService = {
     file_id?: string;
   }): Promise<SummaryListResponse> {
     const searchParams = new URLSearchParams();
-    
+
     if (params?.page) searchParams.set('page', params.page.toString());
     if (params?.per_page) searchParams.set('per_page', params.per_page.toString());
     if (params?.search) searchParams.set('search', params.search);
@@ -87,7 +87,7 @@ export const summaryService = {
 
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/summaries/?${queryString}` : '/summaries/';
-    
+
     return apiClient.get<SummaryListResponse>(endpoint);
   },
 
@@ -97,8 +97,8 @@ export const summaryService = {
   },
 
   // Get summary progress
-  async getSummaryProgress(taskId: string): Promise<SummaryProgressResponse> {
-    return apiClient.get<SummaryProgressResponse>(`/summaries/progress/${taskId}`);
+  async getSummaryProgress(summaryId: string): Promise<SummaryProgressResponse> {
+    return apiClient.get<SummaryProgressResponse>(`/summaries/${summaryId}/progress`);
   },
 
   // Update summary
@@ -112,7 +112,7 @@ export const summaryService = {
   },
 
   // Cancel summary generation
-  async cancelSummary(taskId: string): Promise<{message: string}> {
+  async cancelSummary(taskId: string): Promise<{ message: string }> {
     return apiClient.post(`/summaries/cancel/${taskId}`);
   },
 
@@ -129,7 +129,12 @@ export const summaryService = {
     summaries_by_provider: Record<string, number>;
   }> {
     return apiClient.get('/summaries/analytics');
-  }
+  },
+
+  // Get available summary template types
+  async getSummaryTemplates(): Promise<string[]> {
+    return apiClient.get<string[]>('/summaries/templates');
+  },
 };
 
 // Utility functions
@@ -180,10 +185,10 @@ export const getSummaryStatusLabel = (status: string): string => {
 
 export const formatProcessingTime = (timeMs?: number): string => {
   if (!timeMs) return 'N/A';
-  
+
   if (timeMs < 1000) return `${timeMs}ms`;
   if (timeMs < 60000) return `${Math.round(timeMs / 1000)}s`;
-  
+
   const minutes = Math.floor(timeMs / 60000);
   const seconds = Math.round((timeMs % 60000) / 1000);
   return `${minutes}m ${seconds}s`;

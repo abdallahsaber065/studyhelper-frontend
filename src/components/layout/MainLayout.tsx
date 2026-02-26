@@ -26,14 +26,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ className }) => {
       <Header onMenuToggle={handleMenuToggle} />
 
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={sidebarOpen} 
+      <Sidebar
+        isOpen={sidebarOpen}
         onClose={handleSidebarClose}
       />
 
       {/* Main content */}
       <div className="lg:pl-64">
-        <main className="min-h-[calc(100vh-8rem)] px-4 py-6">
+        <main className="min-h-[calc(100vh-4rem)] overflow-y-auto px-4 py-6">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>

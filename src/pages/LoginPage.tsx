@@ -44,7 +44,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 overflow-y-auto">
       <div className="mx-auto w-full max-w-md space-y-6">
         {/* Logo and header */}
         <div className="text-center">
