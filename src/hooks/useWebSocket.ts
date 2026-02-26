@@ -1,5 +1,109 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
+
+// Global WebSocket manager to prevent multiple connections
+class WebSocketManager {
+  private ws: WebSocket | null = null;
+  private subscribers: Map<string, (message: WebSocketMessage) => void> = new Map();
+  private connectionStatus: 'Connecting' | 'Open' | 'Closing' | 'Closed' | 'Error' = 'Closed';
+  private reconnectAttempts = 0;
+  private reconnectTimeoutId: NodeJS.Timeout | null = null;
+  private maxReconnectAttempts = 5;
+  private reconnectInterval = 3000;
+
+  connect(url: string, token: string) {
+    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+      return;
+    }
+
+    try {
+      const wsUrl = new URL(url);
+      wsUrl.searchParams.set('token', token);
+      
+      this.ws = new WebSocket(wsUrl.toString());
+      this.connectionStatus = 'Connecting';
+
+      this.ws.onopen = () => {
+        this.connectionStatus = 'Open';
+        this.reconnectAttempts = 0;
+        console.log('Global WebSocket connected');
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const message: WebSocketMessage = JSON.parse(event.data);
+          // Notify all subscribers
+          this.subscribers.forEach(callback => callback(message));
+        } catch (error) {
+          console.error('Failed to parse WebSocket message:', error);
+        }
+      };
+
+      this.ws.onclose = () => {
+        this.connectionStatus = 'Closed';
+        console.log('Global WebSocket disconnected');
+        
+        // Attempt to reconnect if we have subscribers
+        if (this.subscribers.size > 0 && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          this.reconnectTimeoutId = setTimeout(() => {
+            this.connect(url, token);
+          }, this.reconnectInterval);
+        }
+      };
+
+      this.ws.onerror = (error) => {
+        this.connectionStatus = 'Error';
+        console.error('Global WebSocket error:', error);
+      };
+
+    } catch (error) {
+      this.connectionStatus = 'Error';
+      console.error('WebSocket connection failed:', error);
+    }
+  }
+
+  subscribe(id: string, callback: (message: WebSocketMessage) => void) {
+    this.subscribers.set(id, callback);
+  }
+
+  unsubscribe(id: string) {
+    this.subscribers.delete(id);
+    
+    // Disconnect if no subscribers left
+    if (this.subscribers.size === 0) {
+      this.disconnect();
+    }
+  }
+
+  disconnect() {
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+    
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.connectionStatus = 'Closed';
+  }
+
+  sendMessage(message: any): boolean {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+      return true;
+    }
+    return false;
+  }
+
+  getConnectionStatus() {
+    return this.connectionStatus;
+  }
+}
+
+// Global instance
+const globalWebSocketManager = new WebSocketManager();
 
 interface WebSocketMessage {
   type: string;
@@ -42,6 +146,16 @@ export const useWebSocket = ({
 
   const connect = useCallback(() => {
     if (!shouldConnect || !token) return;
+    
+    // Prevent multiple connections
+    if (ws.current && ws.current.readyState === WebSocket.CONNECTING) {
+      return;
+    }
+    
+    // Close existing connection if any
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      return;
+    }
 
     try {
       // Add authentication token to WebSocket URL
@@ -92,7 +206,7 @@ export const useWebSocket = ({
       setConnectionStatus('Error');
       console.error('WebSocket connection failed:', error);
     }
-  }, [url, protocols, token, shouldConnect, onConnect, onMessage, onDisconnect, onError, maxReconnectAttempts, reconnectInterval]);
+  }, [url, protocols, token, shouldConnect, maxReconnectAttempts, reconnectInterval]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutId.current) {
@@ -133,20 +247,49 @@ export const useWebSocket = ({
   };
 };
 
-// Specialized hook for summary progress updates
+// Specialized hook for summary progress updates using global WebSocket manager
 export const useSummaryWebSocket = (onProgressUpdate?: (data: any) => void) => {
-  const wsUrl = `${import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000'}/ws/summaries`;
+  const wsUrl = `${import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000'}/ws/connect`;
+  const { token } = useAuthStore();
+  const [connectionStatus, setConnectionStatus] = useState<'Connecting' | 'Open' | 'Closing' | 'Closed' | 'Error'>('Closed');
   
-  return useWebSocket({
-    url: wsUrl,
-    shouldConnect: true,
-    onMessage: (message) => {
-      if (message.type === 'summary_progress' || message.type === 'summary_completed') {
-        onProgressUpdate?.(message.data);
+  // Create a unique subscriber ID
+  const subscriberId = useMemo(() => `summary-${Date.now()}-${Math.random()}`, []);
+  
+  // Use ref to avoid dependency issues with the callback
+  const onProgressUpdateRef = useRef(onProgressUpdate);
+  onProgressUpdateRef.current = onProgressUpdate;
+
+  useEffect(() => {
+    if (!token) return;
+
+    // Subscribe to messages
+    globalWebSocketManager.subscribe(subscriberId, (message) => {
+      if (message.type === 'task_progress' || message.type === 'summary_progress' || message.type === 'summary_completed') {
+        onProgressUpdateRef.current?.(message.data);
       }
-    },
-    onError: (error) => {
-      console.error('Summary WebSocket error:', error);
-    },
-  });
+    });
+
+    // Connect if not already connected
+    globalWebSocketManager.connect(wsUrl, token);
+
+    // Update local connection status
+    const interval = setInterval(() => {
+      setConnectionStatus(globalWebSocketManager.getConnectionStatus());
+    }, 100);
+
+    return () => {
+      clearInterval(interval);
+      globalWebSocketManager.unsubscribe(subscriberId);
+    };
+  }, [token, wsUrl, subscriberId]); // Removed onProgressUpdate from dependencies
+
+  const sendMessage = useCallback((message: any) => {
+    return globalWebSocketManager.sendMessage(message);
+  }, []);
+
+  return {
+    connectionStatus,
+    sendMessage,
+  };
 };

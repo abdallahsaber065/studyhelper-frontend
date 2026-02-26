@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { 
   summaryService, 
-  SummaryListResponse, 
   Summary, 
   SummaryGenerateRequest,
   SummaryProgressResponse,
   SummaryUpdateRequest
 } from '@/services/summaryService';
 import { toast } from '@/hooks/useToast';
+import { useSummaryWebSocket } from '@/hooks/useWebSocket';
 
 // Query keys
 export const summaryQueryKeys = {
@@ -47,25 +48,65 @@ export const useSummary = (summaryId: string) => {
   });
 };
 
-// Hook for tracking summary generation progress
+// Hook for tracking summary generation progress with WebSocket support
 export const useSummaryProgress = (taskId: string, enabled: boolean = true) => {
-  return useQuery({
+  const [realtimeProgress, setRealtimeProgress] = useState<SummaryProgressResponse | null>(null);
+  const queryClient = useQueryClient();
+
+  // WebSocket connection for real-time updates
+  const { sendMessage, connectionStatus } = useSummaryWebSocket((progressData) => {
+    if (progressData?.task_id === taskId) {
+      setRealtimeProgress(progressData);
+      // Update the query cache with real-time data
+      queryClient.setQueryData(summaryQueryKeys.progress(taskId), progressData);
+    }
+  });
+
+  // Subscribe to task progress when connected
+  useEffect(() => {
+    if (connectionStatus === 'Open' && taskId && enabled) {
+      sendMessage({
+        type: 'subscribe_task',
+        task_id: taskId
+      });
+
+      // Cleanup: unsubscribe when component unmounts or taskId changes
+      return () => {
+        sendMessage({
+          type: 'unsubscribe_task',
+          task_id: taskId
+        });
+      };
+    }
+  }, [connectionStatus, taskId, enabled, sendMessage]);
+
+  // Fallback to polling if WebSocket is not available
+  const queryResult = useQuery({
     queryKey: summaryQueryKeys.progress(taskId),
     queryFn: () => summaryService.getSummaryProgress(taskId),
-    enabled: enabled && !!taskId,
+    enabled: enabled && !!taskId && connectionStatus !== 'Open',
     refetchInterval: (data) => {
-      // Poll every 2 seconds if still processing
-      if (data?.status === 'processing' || data?.status === 'pending') {
+      // Poll every 2 seconds if still processing and WebSocket is not connected
+      // Fix: data is the query result object, so use data?.data?.status
+      const status = (data as { data?: SummaryProgressResponse })?.data?.status;
+      if (
+        connectionStatus !== 'Open' &&
+        (status === 'processing' || status === 'pending')
+      ) {
         return 2000;
       }
-      // Stop polling if completed or failed
       return false;
     },
     retry: (failureCount, error) => {
-      // Only retry if we haven't exceeded attempts and it's not a client error
       return failureCount < 3 && !error.message.includes('404');
     },
   });
+
+  // Return real-time data if available, otherwise use query result
+  return {
+    ...queryResult,
+    data: realtimeProgress || queryResult.data,
+  };
 };
 
 // Hook for generating summaries

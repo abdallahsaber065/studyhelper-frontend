@@ -38,7 +38,7 @@ const AI_PROVIDERS = [
 
 const AI_MODELS = {
   openai: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-  gemini: ['gemini-pro', 'gemini-pro-vision'],
+  gemini: ['gemini-2.5-flash', 'gemini-2.0-flash'],
   anthropic: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
 };
 
